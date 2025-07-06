@@ -425,16 +425,14 @@ Este proyecto está bajo la licencia MIT. Consulta el archivo `LICENSE` para má
 
 Para soporte técnico:
 
-- 📧 Email: [tu-email@ejemplo.com]
+- 📧 Email: [jdavidcamejo@gmail.com]
 
-- 🐛 Issues: [GitHub Issues](https://www.google.com/search?q=https://github.com/DavidCamejo/pmpro-woo-sync/issues)
+- 🐛 Issues: [GitHub Issues](https://github.com/DavidCamejo/pmpro-woo-sync/issues)
 
-- 📚 Documentación: [Wiki del Proyecto](https://www.google.com/search?q=https://github.com/DavidCamejo/pmpro-woo-sync/wiki)
+- 📚 Documentación: [Wiki del Proyecto](https://github.com/DavidCamejo/pmpro-woo-sync/wiki)
 
 ---
 
 **⚡ ¡Mantén tus membresías siempre sincronizadas!**
 
 ---
-
-
