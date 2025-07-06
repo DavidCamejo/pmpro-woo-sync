@@ -220,7 +220,7 @@ class PMPro_Woo_Sync_Settings {
         ?>
         <label>
             <input type="checkbox" name="<?php echo self::SETTINGS_OPTION_NAME; ?>[enable_sync]" value="yes" <?php echo $checked; ?> />
-            <?php esc_html_e( 'Habilitar la sincronización entre PMPRO y WooCommerce.', 'pmpro-woo-sync' ); ?>
+            <?php esc_html_e( 'Habilitar la sincronización entre PMPro y WooCommerce.', 'pmpro-woo-sync' ); ?>
         </label>
         <?php
     }
