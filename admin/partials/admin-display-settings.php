@@ -6,7 +6,7 @@
  */
 ?>
 <div class="wrap">
-    <h1><?php esc_html_e( 'Ajustes del Plugin PMPRO-WooCommerce Sync', 'pmpro-woo-sync' ); ?></h1>
+    <h1><?php esc_html_e( 'Ajustes del Plugin PMPro-WooCommerce Sync', 'pmpro-woo-sync' ); ?></h1>
 
     <form method="post" action="options.php">
         <?php
