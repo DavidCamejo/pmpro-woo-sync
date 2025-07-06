@@ -1,3 +1,5 @@
+
+
 ---
 
 # PMPro-WooCommerce Sync
@@ -42,7 +44,7 @@ Este plugin mantiene **automáticamente sincronizadas** las membresías de PMPro
 
 - **Pagos Fallidos**: Implementa sistema de reintentos configurables
 
-- **Cancelaciones**: Cancela la membresía en PMPro cuando se cancela en WooCommerce
+- **Cancelaciones Bidireccionales**: **Cancela la membresía en PMPro cuando se cancela en WooCommerce y, ¡NUEVO!, propaga las cancelaciones desde PMPro a los gateways de pago externos para detener los cobros recurrentes.**
 
 - **Fechas de Expiración**: Calcula y actualiza automáticamente las fechas de renovación
 
@@ -58,7 +60,7 @@ Este plugin mantiene **automáticamente sincronizadas** las membresías de PMPro
 
 ### ✅ **Panel de Administración Intuitivo (¡NUEVO!)**
 
-- **Ajustes Centralizados**: Una sección dedicada en el panel de WordPress para configurar fácilmente las opciones del plugin.
+- **Ajustes Centralizados**: Una sección dedicada en el panel de WordPress para configurar fácilmente las opciones del plugin, **incluyendo credenciales de API para los gateways de pago**.
 
 - **Visualización de Logs**: Interfaz para revisar detalladamente los logs de eventos del plugin, facilitando el monitoreo y la depuración.
 
@@ -104,7 +106,10 @@ pmpro-woo-sync/
 │   ├── class-pmpro-woo-sync.php          <-- Orquestador principal del plugin
 │   ├── class-pmpro-woo-sync-integrations.php  <-- Lógica específica de integración (WooCommerce, PMPro)
 │   ├── class-pmpro-woo-sync-logger.php   <-- Clase para el sistema de logs
-│   └── class-pmpro-woo-sync-settings.php <-- Clase para gestionar las opciones de configuración
+│   ├── class-pmpro-woo-sync-settings.php <-- Clase para gestionar las opciones de configuración
+│   └── class-pmpro-woo-sync-gateway-manager.php <-- ¡NUEVO! Gestiona las interacciones con APIs de gateways.
+│       └── /gateways/                   <-- ¡NUEVO! Clases específicas para cada gateway (ej. PagBank).
+│           ├── class-pmpro-woo-sync-pagbank-api.php
 ├── /admin/                  <-- Funcionalidades y vistas del panel de administración
 │   ├── class-pmpro-woo-sync-admin.php    <-- Clase para la interfaz de administración
 │   └── /partials/                        <-- Plantillas HTML para el panel de administración
@@ -138,14 +143,37 @@ graph LR
     G --> J[Actualiza Estado Usuario]
 ```
 
+### Flujo de Cancelación Bidireccional (¡NUEVO!)
+
+Fragmento do código
+
+```
+sequenceDiagram
+    participant U as Usuario
+    participant P as PMPro
+    participant S as PMPro-Woo Sync Plugin
+    participant W as WooCommerce
+    participant G as Gateway de Pago (ej. PagBank)
+
+    U->>P: Cancela membresía en PMPro
+    P->>S: Hook pmpro_after_change_membership_level
+    S->>S: Determina si necesita cancelación remota
+    S->>W: Busca suscripción WooCommerce relacionada
+    W->>S: Retorna datos de suscripción
+    S->>G: API Call para cancelar suscripción
+    G-->>S: Confirmación de cancelación (o error)
+    S->>W: Actualiza estado en WooCommerce (si el gateway no usa webhooks para esto)
+    S->>S: Registra acción en logs del plugin
+```
+
 ### Estados Manejados
 
-| Estado WooCommerce | Acción en PMPro                      |
-| ------------------ | ------------------------------------ |
-| `completed`        | ✅ Extiende membresía + registra pago |
-| `processing`       | ✅ Extiende membresía + registra pago |
-| `failed`           | ⚠️ Programa reintento automático     |
-| `cancelled`        | ❌ Cancela membresía                  |
+| Estado WooCommerce | Acción en PMPro                                               |
+| ------------------ | ------------------------------------------------------------- |
+| `completed`        | ✅ Extiende membresía + registra pago                          |
+| `processing`       | ✅ Extiende membresía + registra pago                          |
+| `failed`           | ⚠️ Programa reintento automático                              |
+| `cancelled`        | ❌ Cancela membresía + **intenta cancelar en gateway externo** |
 
 ---
 
@@ -181,13 +209,15 @@ Ahora, las configuraciones principales se gestionan a través del **Panel de Adm
 
 Accede a los ajustes del plugin en:
 
-WordPress Admin → PMPRO-Woo Sync → Ajustes
+**WordPress Admin → PMPRO-Woo Sync → Ajustes**
 
 Aquí podrás:
 
 - **Habilitar/Deshabilitar Sincronización:** Controlar si el plugin está activo.
 
 - **Activar/Desactivar Modo Depuración:** Para obtener logs más detallados que ayudan en el diagnóstico.
+
+- **(Nuevo) Configuración de Gateways:** Ingresa tus credenciales de API (ej. API Key de PagBank) y selecciona el modo (Sandbox/Live) para los gateways de pago externos que requieran sincronización de cancelaciones.
 
 - **(Próximamente) Mapeo de Niveles/Productos:** Configurar las relaciones entre los niveles de membresía de PMPRO y los productos de suscripción de WooCommerce.
 
@@ -219,7 +249,7 @@ Los logs se guardan en una **tabla de base de datos dedicada**, accesibles direc
 
 Accede a los Logs en:
 
-WordPress Admin → PMPRO-Woo Sync → Logs
+**WordPress Admin → PMPRO-Woo Sync → Logs**
 
 Aquí podrás:
 
@@ -283,10 +313,16 @@ Usuario con membresía → Pago recurrente exitoso → Membresía extendida auto
 Pago recurrente falla → Reintento automático en 2 días → Máximo 3 intentos → Membresía suspendida
 ```
 
-### Caso 3: Cancelación
+### Caso 3: Cancelación Unidireccional (Desde WooCommerce)
 
 ```
-Usuario cancela suscripción → WooCommerce marca como cancelado → PMPro cancela membresía
+Usuario cancela suscripción en WooCommerce (o PagBank) → WooCommerce marca como cancelado → PMPro cancela membresía
+```
+
+### Caso 4: Cancelación Bidireccional (Desde PMPro)
+
+```
+Usuario cancela membresía en PMPro → Plugin detecta cancelación → Plugin notifica a WooCommerce y al Gateway (ej. PagBank) para detener cobros.
 ```
 
 ---
@@ -342,11 +378,21 @@ Bash
 
 - Revisa metadatos de ciclo en productos
 
+**4. La cancelación de PMPro no detiene el cobro recurrente en el Gateway**
+
+Bash
+
+```
+# Asegúrate de que las credenciales de API del Gateway (ej. PagBank) estén configuradas correctamente en los ajustes del plugin.
+# Revisa los logs del plugin en el panel de administración para ver si hay errores al intentar comunicarse con el Gateway.
+# Verifica que el nivel de membresía y la suscripción de WooCommerce estén correctamente vinculados.
+```
+
 ### Activar Debug Mode
 
 Activa el modo depuración desde el panel de administración del plugin:
 
-WordPress Admin → PMPRO-Woo Sync → Ajustes → Habilitar Modo Depuración
+**WordPress Admin → PMPRO-Woo Sync → Ajustes → Habilitar Modo Depuración**
 
 También puedes activar el `WP_DEBUG_LOG` en tu `wp-config.php` para registros adicionales del sistema:
 
@@ -403,6 +449,8 @@ git clone https://github.com/DavidCamejo/pmpro-woo-sync.git
 
 - ✅ Manejo de múltiples tipos de renovación
 
+- ✅ **NUEVO: Implementación de cancelación bidireccional (PMPro al Gateway).**
+
 ---
 
 ## 📜 Licencia
@@ -434,5 +482,3 @@ Para soporte técnico:
 ---
 
 **⚡ ¡Mantén tus membresías siempre sincronizadas!**
-
----

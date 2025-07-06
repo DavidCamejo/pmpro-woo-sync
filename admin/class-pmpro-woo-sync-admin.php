@@ -34,8 +34,8 @@ class PMPro_Woo_Sync_Admin {
      */
     public function add_admin_menu_pages() {
         add_menu_page(
-            __( 'PMPRO-Woo Sync', 'pmpro-woo-sync' ),      // Título de la página.
-            __( 'PMPRO-Woo Sync', 'pmpro-woo-sync' ),      // Texto del menú.
+            __( 'PMPro-Woo Sync', 'pmpro-woo-sync' ),      // Título de la página.
+            __( 'PMPro-Woo Sync', 'pmpro-woo-sync' ),      // Texto del menú.
             'manage_options',                              // Capacidad requerida para acceder.
             'pmpro-woo-sync',                              // Slug del menú.
             [ $this, 'display_settings_page' ],            // Callback para renderizar la página.

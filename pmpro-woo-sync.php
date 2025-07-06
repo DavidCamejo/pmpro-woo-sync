@@ -35,17 +35,19 @@ define( 'PMPRO_WOO_SYNC_BASENAME', plugin_basename( __FILE__ ) );
 spl_autoload_register( function ( $class_name ) {
     // Solo autocargar nuestras clases con prefijo 'PMPro_Woo_Sync_'
     if ( strpos( $class_name, 'PMPro_Woo_Sync_' ) === 0 ) {
-        // Convierte el nombre de la clase a formato de nombre de archivo (class-pmpro-woo-sync-logger.php)
         $file_name = str_replace( 'PMPro_Woo_Sync_', 'class-pmpro-woo-sync-', strtolower( $class_name ) );
 
         // Rutas potenciales para el archivo de clase
         $include_path = PMPRO_WOO_SYNC_PATH . 'includes/' . $file_name . '.php';
         $admin_path   = PMPRO_WOO_SYNC_PATH . 'admin/' . $file_name . '.php';
+        $gateway_path = PMPRO_WOO_SYNC_PATH . 'includes/gateways/' . $file_name . '.php'; // ¡NUEVO!
 
         if ( file_exists( $include_path ) ) {
             require_once $include_path;
         } elseif ( file_exists( $admin_path ) ) {
             require_once $admin_path;
+        } elseif ( file_exists( $gateway_path ) ) { // ¡NUEVO!
+            require_once $gateway_path;
         }
     }
 });
@@ -63,8 +65,8 @@ require_once PMPRO_WOO_SYNC_PATH . 'includes/class-pmpro-woo-sync.php';
 require_once PMPRO_WOO_SYNC_PATH . 'includes/class-pmpro-woo-sync-logger.php';
 require_once PMPRO_WOO_SYNC_PATH . 'includes/class-pmpro-woo-sync-settings.php';
 require_once PMPRO_WOO_SYNC_PATH . 'includes/class-pmpro-woo-sync-integrations.php';
+require_once PMPRO_WOO_SYNC_PATH . 'includes/class-pmpro-woo-sync-gateway-manager.php'; // ¡NUEVO!
 require_once PMPRO_WOO_SYNC_PATH . 'admin/class-pmpro-woo-sync-admin.php';
-
 
 /**
  * Inicializa el plugin.

@@ -11,13 +11,14 @@
     <form method="post" action="options.php">
         <?php
         // Imprime los campos ocultos de seguridad necesarios para la Settings API.
-        settings_fields( 'pmpro_woo_sync_option_group' );
+        //settings_fields( 'pmpro_woo_sync_option_group' );
+        settings_fields( PMPro_Woo_Sync_Settings::SETTINGS_GROUP_NAME ); // <- USA LA CONSTANTE AQUÍ
 
         // Imprime todas las secciones y campos registrados para la página 'pmpro-woo-sync'.
         do_settings_sections( 'pmpro-woo-sync' );
 
         // Imprime el botón de guardar.
-        submit_button();
+        submit_button( __( 'Guardar Cambios', 'pmpro-woo-sync' ) );
         ?>
     </form>
 </div>

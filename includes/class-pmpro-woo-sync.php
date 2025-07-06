@@ -98,8 +98,9 @@ class PMPro_Woo_Sync {
         // add_action( 'woocommerce_subscription_status_changed', [ $this->integrations, 'handle_subscription_status_change' ], 10, 3 );
         // add_action( 'woocommerce_order_status_changed', [ $this->integrations, 'handle_order_status_change' ], 10, 4 );
 
-        // Ejemplo: Sincronizar un usuario cuando se actualiza.
-        // add_action( 'profile_update', [ $this->integrations, 'sync_user_on_profile_update' ], 10, 2 );
+        // TODO: Asegúrate de que el hook pmpro_after_change_membership_level sea el más adecuado para tu caso.
+        // Puede que necesites combinarlo con pmpro_change_membership_level para verificar el "antes".
+        add_action( 'pmpro_after_change_membership_level', [ $this->integrations, 'handle_pmpro_cancellation_from_pmpro' ], 10, 3 ); // ¡NUEVO HOOK!
     }
 
     /**
