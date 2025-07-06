@@ -7,7 +7,7 @@
  */
 ?>
 <div class="wrap">
-    <h1><?php esc_html_e( 'Logs del Plugin PMPRO-WooCommerce Sync', 'pmpro-woo-sync' ); ?></h1>
+    <h1><?php esc_html_e( 'Logs del Plugin PMPro-WooCommerce Sync', 'pmpro-woo-sync' ); ?></h1>
 
     <form method="get" class="alignright">
         <input type="hidden" name="page" value="pmpro-woo-sync-logs">
