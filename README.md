@@ -1,4 +1,4 @@
-# PMPro-WooCommerce Sync Enhanced
+# PMPro-WooCommerce Sync
 
 ## 🎯 Finalidad
 
