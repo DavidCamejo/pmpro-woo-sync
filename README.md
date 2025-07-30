@@ -530,10 +530,8 @@ add_action('pmpro_woo_sync_membership_renewed', function($user_id, $level_id) {
 
 ---
 
-🔧 Integ
+🔧 Integración con Gateways
 --------
-
-ración con Gateways
 
 ### PagBank Connect - Configuración Completa
 
