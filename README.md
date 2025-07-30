@@ -272,9 +272,7 @@ add_filter('pmpro_woo_sync_api_timeout', function($timeout) {
 | `error`   | 🔴 Rojo     | Errores que requieren atención |
 | `debug`   | 🟣 Morado   | Información detallada de debug |
 
-### Herramientas de Diagn
-
-óstico
+### Herramientas de Diagnóstico
 
 **WordPress Admin → PMPRO-Woo Sync → Herramientas**
 
@@ -358,10 +356,7 @@ Array(
 
 #### Estado de Gateways
 
-* API
-
-de PagBank (configurada/no configurada)
-
+* API de PagBank (configurada/no configurada)
 * Modo del gateway (Live/Sandbox)
 * Prueba de conexión en tiempo real
 
@@ -408,11 +403,8 @@ de PagBank (configurada/no configurada)
 **Diagnóstico:**
 
 1. Verificar configuración de API del gateway
-
 2. Revisar logs para errores de comunicación
-
 3. Comprobar vinculación membresía-suscripción
-
 4. Usar herramienta "Verificar Estados de Gateway"
 
 **Posibles causas:**
@@ -434,13 +426,9 @@ de PagBank (configurada/no configurada)
 **Diagnóstico:**
 
 1. Verificar configuración de API del gateway
-
-2. Revisar logs para errores de comunicación
-
+. Revisar logs para errores de comunicación
 3. Comprobar vinculación membresía-suscripción
-
 4. Usar herramienta "Verificar Estados de Gateway"
-
 4. Logs no aparecen o se llenan muy rápido
 
 **Soluciones:**
