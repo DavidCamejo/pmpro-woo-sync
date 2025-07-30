@@ -73,9 +73,7 @@ Interfaz moderna y profesional con **4 secciones principales**:
 - **Verificación de estados** en gateways externos
 - **Limpieza de metadatos huérfanos**
 - **Herramienta de debug específica** para usuarios individuales
-- **Rein
-
-icio completo** de configuraciones
+- **Reinicio completo** de configuraciones
 
 #### **Estado del Sistema** (¡NUEVO!)
 
