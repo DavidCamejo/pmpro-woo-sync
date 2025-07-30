@@ -49,10 +49,13 @@ Interfaz moderna y profesional con **4 secciones principales**:
 #### **Configuraciones**
 
 - Ajustes centralizados para todas las opciones del plugin
+
 - Configuración de credenciales de API para gateways de pago
 
 - Validación en tiempo real de configuraciones
+
 - Indicadores visuales de estado (Sincronización, Debug, API)
+
 - Auto-guardado de borradores cada 30 segundos
 
 #### **Logs del Sistema**
@@ -374,11 +377,9 @@ Array(
 
 **Diagnóstico:**
 
-1. Verificar logs en: PMPRO-Woo Sync → Logs
-
-2. Filtrar por nivel "error" o "warning"
-
-3. Usar herramienta de debug específica para el usuario afectado
+1. Verificar logs en: PMPRO-Woo Sync → Logs
+2. Filtrar por nivel "error" o "warning"
+3. Usar herramienta de debug específica para el usuario afectado
 
 **Posibles causas:**
 
@@ -425,7 +426,7 @@ Array(
 2. Revisar logs para errores de comunicación
 3. Comprobar vinculación membresía-suscripción
 4. Usar herramienta "Verificar Estados de Gateway"
-4. Logs no aparecen o se llenan muy rápido
+5. Logs no aparecen o se llenan muy rápido
 
 **Soluciones:**
 
@@ -645,7 +646,9 @@ to JSON completo
 #### 🔄 Changed
 
 * Migración completa a arquitectura orientada a objetos
+
 * Panel de administración centralizado reemplaza configuración manual
+
 * Logs almacenados en base de datos en lugar de archivos
 
 * Sistema de configuraciones con valores predeterminados
