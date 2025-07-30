@@ -514,7 +514,7 @@ add_action('pmpro_woo_sync_membership_renewed', function($user_id, $level_id) {
 
 #### Eventos Manejados:
 
-```php
+```
 // Webhooks automáticos de PagBank
 'subscription.payment_succeeded' => 'renovar_membresia'
 'subscription.payment_failed'    => 'programar_reintento'  
