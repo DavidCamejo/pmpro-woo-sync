@@ -375,9 +375,7 @@ Array(
 **Diagnóstico:**
 
 1. Verificar logs en: PMPRO-Woo Sync → Logs
-
 2. Filtrar por nivel "error" o "warning"
-
 3. Usar herramienta de debug específica para el usuario afectado
 
 **Posibles causas:**
@@ -422,7 +420,7 @@ Array(
 **Diagnóstico:**
 
 1. Verificar configuración de API del gateway
-. Revisar logs para errores de comunicación
+2. Revisar logs para errores de comunicación
 3. Comprobar vinculación membresía-suscripción
 4. Usar herramienta "Verificar Estados de Gateway"
 4. Logs no aparecen o se llenan muy rápido
@@ -688,10 +686,7 @@ Este proyecto está bajo la **Licencia MIT**. Consulta el archivo `LICENSE` p
 
 * **Desarrollado por**: David Camejo
 * **Inspirado en**: Necesidades reales de sincronización PMPro-WooCommerce
-* **Basado en análisis de**: [PagBank Connect Plugin](https://github.com/r-martins/PagBank-W
-
-ooCommerce)
-
+* **Basado en análisis de**: [PagBank Connect Plugin](https://github.com/r-martins/PagBank-WooCommerce)
 * **Testeado por**: Comunidad de desarrolladores WordPress
 
 * * *
