@@ -422,13 +422,13 @@ de PagBank (configurada/no configurada)
 
 **Diagnóstico:**
 
-# 1. Verificar configuración de API del gateway
+1. Verificar configuración de API del gateway
 
-# 2. Revisar logs para errores de comunicación
+2. Revisar logs para errores de comunicación
 
-# 3. Comprobar vinculación membresía-suscripción
+3. Comprobar vinculación membresía-suscripción
 
-# 4. Usar herramienta "Verificar Estados de Gateway"
+4. Usar herramienta "Verificar Estados de Gateway"
 
 **Posibles causas:**
 
