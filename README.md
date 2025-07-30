@@ -233,9 +233,7 @@ add_filter('pmpro_woo_sync_max_retries', function($max) {
 
 // Cambiar días entre reintentos
 add_filter('pmpro_woo_sync_retry_delay', function($days) {
-    return 3;
-
- // 3 días en lugar de 2
+    return 3; // 3 días en lugar de 2
 });
 
 // Personalizar timeout de API
