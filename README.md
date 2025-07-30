@@ -303,9 +303,7 @@ Array(
             [id] => 456
             [status] => completed
             [total] => 29.99
-            [date] =>
-
- 2024-07-01 10:30:00
+            [date] => 2024-07-01 10:30:00
             [is_subscription] => true
         )
     )
