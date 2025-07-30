@@ -1,19 +1,622 @@
-/*
- * Contenido para pmpro-woo-sync/assets/css/admin.css
- * Añade aquí tus estilos CSS personalizados para el área de administración del plugin.
- */
 
-/* Ejemplo: Un estilo para el campo de mapeo si lo implementas */
-/*
-.pmpro-woo-sync-mapping-table {
+/* ===== GENERAL STYLES ===== */
+.pmpro-woo-sync-admin-content {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.pmpro-woo-sync-main-content {
+    flex: 1;
+}
+
+.pmpro-woo-sync-sidebar {
+    width: 300px;
+}
+
+.pmpro-woo-sync-widget {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.pmpro-woo-sync-widget h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* ===== STATUS INDICATORS ===== */
+.pmpro-woo-sync-admin-header {
+    margin-bottom: 20px;
+}
+
+.pmpro-woo-sync-indicators {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.pmpro-woo-sync-indicators .indicator {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.indicator.active {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.indicator.inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.indicator.warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+/* ===== FORM STYLES ===== */
+.pmpro-woo-sync-form-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.pmpro-woo-sync-quick-actions .button {
     width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
-.pmpro-woo-sync-mapping-table th,
-.pmpro-woo-sync-mapping-table td {
-    border: 1px solid #ccc;
-    padding: 8px;
-    text-align: left;
+
+.pmpro-woo-sync-system-info p {
+    margin: 8px 0;
+    font-size: 13px;
 }
-*/
+
+.pmpro-woo-sync-dependencies ul {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0 0;
+}
+
+.pmpro-woo-sync-dependencies li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    font-size: 12px;
+}
+
+.pmpro-woo-sync-dependencies .dashicons-yes-alt {
+    color: #00a32a;
+}
+
+.pmpro-woo-sync-dependencies .dashicons-dismiss {
+    color: #d63638;
+}
+
+/* ===== LOGS STYLES ===== */
+.pmpro-woo-sync-stats-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.pmpro-woo-sync-stat-box {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    padding: 20px;
+    text-align: center;
+    min-width: 120px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.pmpro-woo-sync-stat-box h3 {
+    margin: 0 0 5px 0;
+    font-size: 28px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.pmpro-woo-sync-stat-box p {
+    margin: 0;
+    font-size: 12px;
+    color: #646970;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.pmpro-woo-sync-stat-box.error-stat h3 {
+    color: #d63638;
+}
+
+.pmpro-woo-sync-stat-box.warning-stat h3 {
+    color: #dba617;
+}
+
+.pmpro-woo-sync-logs-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f6f7f7;
+    border: 1px solid #c3c4c7;
+}
+
+.pmpro-woo-sync-filters {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.pmpro-woo-sync-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.pmpro-woo-sync-logs-table-container {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+/* ===== LOG LEVELS ===== */
+.pmpro-woo-sync-log-level {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #fff;
+    line-height: 1;
+}
+
+.pmpro-woo-sync-log-level-info {
+    background-color: #00a32a;
+}
+
+.pmpro-woo-sync-log-level-success {
+    background-color: #00a32a;
+}
+
+.pmpro-woo-sync-log-level-warning {
+    background-color: #dba617;
+}
+
+.pmpro-woo-sync-log-level-error {
+    background-color: #d63638;
+}
+
+.pmpro-woo-sync-log-level-debug {
+    background-color: #2271b1;
+}
+
+/* ===== LOG TABLE ===== */
+#logs-table .column-timestamp {
+    width: 150px;
+}
+
+#logs-table .column-level {
+    width: 80px;
+}
+
+#logs-table .column-actions {
+    width: 100px;
+}
+
+.log-row.log-level-error {
+    background-color: rgba(214, 54, 56, 0.05);
+}
+
+.log-row.log-level-warning {
+    background-color: rgba(219, 166, 23, 0.05);
+}
+
+.log-message {
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.toggle-full-message {
+    color: #2271b1;
+    text-decoration: none;
+    font-size: 12px;
+    margin-left: 5px;
+}
+
+.toggle-full-message:hover {
+    color: #135e96;
+}
+
+.pmpro-woo-sync-no-logs {
+    text-align: center;
+    padding: 60px 20px;
+    color: #646970;
+}
+
+.pmpro-woo-sync-no-logs .dashicons {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+
+.pmpro-woo-sync-no-logs h3 {
+    color: #1d2327;
+    margin-bottom: 10px;
+}
+
+/* ===== LOG TOOLS ===== */
+.pmpro-woo-sync-logs-tools {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f6f7f7;
+    border: 1px solid #c3c4c7;
+}
+
+.pmpro-woo-sync-inline-form {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.pmpro-woo-sync-inline-form .description {
+    font-style: italic;
+    color: #646970;
+}
+
+/* ===== MODAL STYLES ===== */
+.log-details-content {
+    padding: 20px;
+}
+
+.log-detail-item {
+    margin-bottom: 20px;
+}
+
+.log-detail-item strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #1d2327;
+}
+
+.log-detail-item pre {
+    background: #f6f7f7;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    overflow-x: auto;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+    .pmpro-woo-sync-admin-content {
+        flex-direction: column;
+    }
+    
+    .pmpro-woo-sync-sidebar {
+        width: 100%;
+    }
+    
+    .pmpro-woo-sync-stats-container {
+        flex-wrap: wrap;
+    }
+}
+
+
+/* ===== TOOLS PAGE STYLES ===== */
+.pmpro-woo-sync-tools-container {
+    margin-top: 20px;
+}
+
+.pmpro-woo-sync-tool-section {
+    margin-bottom: 40px;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.pmpro-woo-sync-tool-section h2 {
+    margin: 0;
+    padding: 15px 20px;
+    border-bottom: 1px solid #c3c4c7;
+    background: #f6f7f7;
+    font-size: 16px;
+}
+
+.pmpro-woo-sync-tool-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.tool-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+    transition: box-shadow 0.2s ease;
+}
+
+.tool-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,.1);
+}
+
+.tool-card.warning {
+    border-left: 4px solid #d63638;
+}
+
+.tool-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    color: #1d2327;
+}
+
+.tool-card p {
+    color: #646970;
+    margin-bottom: 15px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.tool-card .button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.pmpro-woo-sync-debug-tool {
+    padding: 20px;
+    margin: 20px;
+    background: #f8f9fa;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+}
+
+.debug-results {
+    margin-top: 20px;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+}
+
+.debug-results h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #1d2327;
+}
+
+.debug-results pre {
+    background: #f6f7f7;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.4;
+    max-height: 400px;
+    overflow-y: auto;
+    margin: 0;
+}
+
+/* ===== STATUS PAGE STYLES ===== */
+.pmpro-woo-sync-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.status-section {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.status-section h2 {
+    margin: 0;
+    padding: 15px 20px;
+    border-bottom: 1px solid #c3c4c7;
+    background: #f6f7f7;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.status-section table {
+    border: none;
+    margin: 0;
+    width: 100%;
+}
+
+.status-section tbody tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+.status-section .row-title {
+    width: 45%;
+    font-weight: 600;
+    padding: 12px 20px;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.status-section td:last-child {
+    padding: 12px 20px;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    text-align: center;
+    line-height: 18px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.status-indicator.active {
+    background-color: #00a32a;
+}
+
+.status-indicator.inactive {
+    background-color: #646970;
+}
+
+.status-indicator.warning {
+    background-color: #dba617;
+}
+
+.status-indicator.error {
+    background-color: #d63638;
+}
+
+.pmpro-woo-sync-quick-actions-footer {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    padding: 25px;
+    border-radius: 4px;
+    text-align: center;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.pmpro-woo-sync-quick-actions-footer h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #1d2327;
+}
+
+.pmpro-woo-sync-quick-actions-footer .button {
+    margin: 0 8px 10px 8px;
+}
+
+/* ===== RESPONSIVE IMPROVEMENTS ===== */
+@media (max-width: 768px) {
+    .pmpro-woo-sync-tool-grid {
+        grid-template-columns: 1fr;
+        padding: 15px;
+    }
+    
+    .pmpro-woo-sync-status-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .status-section .row-title {
+        width: 100%;
+        display: block;
+        padding-bottom: 8px;
+        border-bottom: none;
+    }
+    
+    .status-section td:last-child {
+        padding-left: 20px;
+        padding-top: 0;
+        display: block;
+        border-bottom: 1px solid #f0f0f1;
+    }
+    
+    .pmpro-woo-sync-quick-actions-footer .button {
+        display: block;
+        width: 100%;
+        margin: 5px 0;
+        text-align: center;
+    }
+}
+
+/* ===== ADDITIONAL UTILITY CLASSES ===== */
+.pmpro-woo-sync-text-center {
+    text-align: center;
+}
+
+.pmpro-woo-sync-text-muted {
+    color: #646970;
+}
+
+.pmpro-woo-sync-mb-0 {
+    margin-bottom: 0 !important;
+}
+
+.pmpro-woo-sync-mt-20 {
+    margin-top: 20px;
+}
+
+.pmpro-woo-sync-p-20 {
+    padding: 20px;
+}
+
+/* ===== ENHANCED BUTTON STYLES ===== */
+.button.pmpro-woo-sync-tool-button {
+    position: relative;
+    overflow: hidden;
+}
+
+.button.pmpro-woo-sync-tool-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.button.pmpro-woo-sync-tool-button .dashicons {
+    margin-right: 6px;
+    margin-top: -2px;
+    vertical-align: middle;
+}
+
+/* ===== ENHANCED ANIMATIONS ===== */
+.tool-card {
+    transform: translateY(0);
+    transition: all 0.2s ease;
+}
+
+.tool-card:hover {
+    transform: translateY(-2px);
+}
+
+.status-indicator {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.status-indicator.error {
+    animation: pulse-error 1s infinite;
+}
+
+@keyframes pulse-error {
+    0% { background-color: #d63638; }
+    50% { background-color: #b32d2e; }
+    100% { background-color: #d63638; }
+}
