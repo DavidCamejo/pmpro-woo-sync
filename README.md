@@ -536,9 +536,7 @@ El plugin está preparado para soportar Stripe con:
 // Estructura base para nuevo gateway
 class PMPro_Woo_Sync_New_Gateway_API {
     public function cancel_subscription($subscription_id) {
-        // Implementar lógica especí
-
-fica del gateway
+        // Implementar lógica específica del gateway
     }
 
     public function test_connection() {
