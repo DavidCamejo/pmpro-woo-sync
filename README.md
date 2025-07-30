@@ -377,6 +377,7 @@ Array(
 1. Verificar logs en: PMPRO-Woo Sync → Logs
 
 2. Filtrar por nivel "error" o "warning"
+
 3. Usar herramienta de debug específica para el usuario afectado
 
 **Posibles causas:**
