@@ -613,9 +613,7 @@ pmpro-woo-sync/
   * Exportación de logs en formato JSON
   * Auto-refresh cada 30 segundos con pausa automática
   * Estadísticas en tiempo real de eventos
-  * Modal de detalles con contex
-
-to JSON completo
+  * Modal de detalles con contexto JSON completo
 
 * **Herramientas de Diagnóstico**
   
@@ -714,6 +712,7 @@ Incluir siempre:
 * Versión del plugin
 * Versión de WordPress
 * Versión de WooCommerce y PMPro
+* Versión de PagBank Connect Plugin
 * Configuración del gateway
 * Logs exportados del problema
 * Pasos detallados para reproducir
