@@ -22,9 +22,7 @@ Esto resulta en:
 
 ### La Solución
 
-Este plugin mantiene **automáticamente sin
-
-cronizadas** las membresías de PMPro con el estado real de las suscripciones en WooCommerce.
+Este plugin mantiene **automáticamente sincronizadas** las membresías de PMPro con el estado real de las suscripciones en WooCommerce.
 
 ---
 
