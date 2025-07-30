@@ -49,9 +49,7 @@ Interfaz moderna y profesional con **4 secciones principales**:
 #### **Configuraciones**
 
 - Ajustes centralizados para todas las opciones del plugin
-- Configur
-
-ación de credenciales de API para gateways de pago
+- Configuración de credenciales de API para gateways de pago
 
 - Validación en tiempo real de configuraciones
 - Indicadores visuales de estado (Sincronización, Debug, API)
