@@ -644,9 +644,7 @@ to JSON completo
 
 * Migración completa a arquitectura orientada a objetos
 * Panel de administración centralizado reemplaza configuración manual
-* Logs almacenados en base de datos
-
-en lugar de archivos
+* Logs almacenados en base de datos en lugar de archivos
 
 * Sistema de configuraciones con valores predeterminados
 
