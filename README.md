@@ -1,4 +1,4 @@
-# PMPro-WooCommerce Sync
+# PMPro-Woo Sync
 
 ## 🎯 Finalidad
 
@@ -711,7 +711,7 @@ Incluir siempre:
 
 * Versión del plugin
 * Versión de WordPress
-* Versión de WooCommerce y PMPro
+* Versión de WooCommerce y Paid Memberships Pro
 * Versión de PagBank Connect Plugin
 * Configuración del gateway
 * Logs exportados del problema
