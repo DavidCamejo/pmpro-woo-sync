@@ -1,4 +1,4 @@
-=== PMPro-WooCommerce Sync ===
+=== PMPro-Woo Sync ===
 Contributors: DavidCamejo
 Tags: woocommerce, paid memberships pro, pmpro, subscriptions, sync, pagbank, membership, payments, recurring, billing
 Requires at least: 5.0
@@ -12,7 +12,7 @@ Resuelve problemas críticos de sincronización entre Paid Memberships Pro y Woo
 
 == Description ==
 
-**PMPro-WooCommerce Sync** es la solución definitiva para mantener automáticamente sincronizadas las membresías de **Paid Memberships Pro (PMPro)** con el estado real de las suscripciones de **WooCommerce**, especialmente cuando se utilizan gateways de pago externos como **PagBank**.
+**PMPro-Woo Sync** es la solución definitiva para mantener automáticamente sincronizadas las membresías de **Paid Memberships Pro (PMPro)** con el estado real de las suscripciones de **WooCommerce**, especialmente cuando se utilizan gateways de pago externos como **PagBank**.
 
 = El Problema que Resuelve =
 
