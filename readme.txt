@@ -186,7 +186,7 @@ Sí. El plugin es completamente compatible con WordPress Network/Multisitio.
 
 == Changelog ==
 
-= 1.0.0 - 2024-07-30 =
+= 1.0.0 - 2025-07-30 =
 
 **Added**
 * Sistema de administración completo con 4 páginas principales
