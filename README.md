@@ -143,9 +143,7 @@ pmpro-woo-sync/
 │ ├── admin-display-logs.php # Visualizador de logs
 │ ├── admin-display-tools.php # Herramientas del plugin
 │ ├── admin-display-status.php # Estado del sistema
-│ └── log-row.php # Compon
-
-ente fila de log
+│ └── log-row.php # Componente fila de log
 └── /languages/ # Internacionalización
 ```
 
