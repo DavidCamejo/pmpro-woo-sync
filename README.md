@@ -2,7 +2,7 @@
 
 ## 🎯 Finalidad
 
-Este plugin resuelve un problema específico en la integración entre **Paid Memberships Pro (PMPro)** y **WooCommerce** cuando se procesan pagos recurrentes a través de gateways como **PagBank**.
+Este plugin permite utilizar gateways de pagos recurrentes de **WooCommeece**, como **PagBank Connect** (Brasil), en **Paid Memberships Pro**. Esto sincroniza automáticamente los pagos recurrentes de WooCommerce con los estados de las suscripciones en Paid Memberships Pro.
 
 ### El Problema
 
