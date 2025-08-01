@@ -39,14 +39,32 @@ define( 'PMPRO_WOO_SYNC_MIN_PHP_VERSION', '7.4' );
 define( 'PMPRO_WOO_SYNC_MIN_WP_VERSION', '5.0' );
 
 /**
+ * Cargar clase principal para hooks de activación/desactivación.
+ */
+function pmpro_woo_sync_load_main_class() {
+    $main_class_file = PMPRO_WOO_SYNC_PATH . 'includes/class-pmpro-woo-sync.php';
+    
+    if ( file_exists( $main_class_file ) && ! class_exists( 'PMPro_Woo_Sync' ) ) {
+        require_once $main_class_file;
+    }
+    
+    return class_exists( 'PMPro_Woo_Sync' );
+}
+
+/**
  * Verificar dependencias críticas del plugin.
  *
  * @return bool True si todas las dependencias están satisfechas.
  */
 function pmpro_woo_sync_check_dependencies() {
+    // Solo verificar is_plugin_active si estamos en admin
+    if ( ! function_exists( 'is_plugin_active' ) ) {
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    }
+    
     $dependencies = array(
         'plugins' => array(
-            'pmpro/paid-memberships-pro.php' => array(
+            'paid-memberships-pro/paid-memberships-pro.php' => array(
                 'name' => 'Paid Memberships Pro',
                 'function' => 'pmpro_getLevel',
                 'required' => true,
@@ -99,7 +117,7 @@ function pmpro_woo_sync_check_dependencies() {
         add_action( 'admin_notices', function() use ( $missing ) {
             echo '<div class="notice notice-error"><p>';
             printf( 
-                '<strong>PMPro-WooCommerce Sync:</strong> %s <br><strong>%s:</strong> %s',
+                '<strong>PMPro-Woo-Sync:</strong> %s <br><strong>%s:</strong> %s',
                 __( 'No se puede activar. Faltan dependencias críticas', 'pmpro-woo-sync' ),
                 __( 'Requerido', 'pmpro-woo-sync' ),
                 implode( ', ', $missing )
@@ -114,7 +132,7 @@ function pmpro_woo_sync_check_dependencies() {
         add_action( 'admin_notices', function() use ( $warnings ) {
             echo '<div class="notice notice-warning"><p>';
             printf( 
-                '<strong>PMPro-WooCommerce Sync:</strong> %s <br><strong>%s:</strong> %s',
+                '<strong>PMPro-Woo-Sync:</strong> %s <br><strong>%s:</strong> %s',
                 __( 'Funcionalidad limitada', 'pmpro-woo-sync' ),
                 __( 'Se recomienda instalar', 'pmpro-woo-sync' ),
                 implode( ', ', $warnings )
@@ -188,8 +206,8 @@ function pmpro_woo_sync_init() {
         return false;
     }
     
-    // Cargar clases principales
-    if ( ! class_exists( 'PMPro_Woo_Sync' ) ) {
+    // Cargar clase principal si no existe
+    if ( ! pmpro_woo_sync_load_main_class() ) {
         return false;
     }
     
@@ -211,7 +229,7 @@ function activate_pmpro_woo_sync() {
     if ( version_compare( PHP_VERSION, PMPRO_WOO_SYNC_MIN_PHP_VERSION, '<' ) ) {
         deactivate_plugins( PMPRO_WOO_SYNC_BASENAME );
         wp_die( sprintf(
-            __( 'PMPro-WooCommerce Sync requiere PHP %s o superior. Tu versión actual es %s.', 'pmpro-woo-sync' ),
+            __( 'PMPro-Woo-Sync requiere PHP %s o superior. Tu versión actual es %s.', 'pmpro-woo-sync' ),
             PMPRO_WOO_SYNC_MIN_PHP_VERSION,
             PHP_VERSION
         ));
@@ -220,9 +238,14 @@ function activate_pmpro_woo_sync() {
     if ( version_compare( get_bloginfo( 'version' ), PMPRO_WOO_SYNC_MIN_WP_VERSION, '<' ) ) {
         deactivate_plugins( PMPRO_WOO_SYNC_BASENAME );
         wp_die( sprintf(
-            __( 'PMPro-WooCommerce Sync requiere WordPress %s o superior.', 'pmpro-woo-sync' ),
+            __( 'PMPro-Woo-Sync requiere WordPress %s o superior.', 'pmpro-woo-sync' ),
             PMPRO_WOO_SYNC_MIN_WP_VERSION
         ));
+    }
+    
+    // Cargar la clase principal antes de usarla
+    if ( ! pmpro_woo_sync_load_main_class() ) {
+        wp_die( __( 'No se pudo cargar la clase principal del plugin. Verifique que todos los archivos estén presentes.', 'pmpro-woo-sync' ) );
     }
     
     // Ejecutar activación
@@ -240,7 +263,10 @@ register_activation_hook( __FILE__, 'activate_pmpro_woo_sync' );
  * Hook de desactivación del plugin.
  */
 function deactivate_pmpro_woo_sync() {
-    PMPro_Woo_Sync::deactivate();
+    // Cargar la clase principal si es necesario
+    if ( pmpro_woo_sync_load_main_class() ) {
+        PMPro_Woo_Sync::deactivate();
+    }
     
     // Limpiar cache de permalinks
     flush_rewrite_rules();

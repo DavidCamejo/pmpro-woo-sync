@@ -1,6 +1,6 @@
 <?php
 /**
- * Plantilla para la página de logs del plugin PMPRO-WooCommerce Sync.
+ * Plantilla para la página de logs del plugin PMPro-Woo-Sync.
  * Variables disponibles: $logs, $total_logs, $logs_per_page, $current_page, $total_pages, $filter_level, $search_query, $log_stats
  */
 
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 
 <div class="wrap">
-    <h1><?php esc_html_e( 'Logs del Sistema - PMPro-WooCommerce Sync', 'pmpro-woo-sync' ); ?></h1>
+    <h1><?php esc_html_e( 'Logs del Sistema - PMPro-Woo-Sync', 'pmpro-woo-sync' ); ?></h1>
 
     <div id="pmpro-woo-sync-admin-notices"></div>
 

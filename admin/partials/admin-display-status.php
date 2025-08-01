@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 
 <div class="wrap">
-    <h1><?php esc_html_e( 'Estado del Sistema - PMPro-WooCommerce Sync', 'pmpro-woo-sync' ); ?></h1>
+    <h1><?php esc_html_e( 'Estado del Sistema - PMPro-Woo-Sync', 'pmpro-woo-sync' ); ?></h1>
 
     <div class="pmpro-woo-sync-status-grid">
         

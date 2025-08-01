@@ -1,6 +1,6 @@
 <?php
 /**
- * Plantilla para la página de ajustes del plugin PMPRO-WooCommerce Sync.
+ * Plantilla para la página de ajustes del plugin PMPRO-Woo-Sync.
  * Variables disponibles: $this (PMPro_Woo_Sync_Admin instance)
  */
 
@@ -11,13 +11,34 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 
 <div class="wrap">
-    <h1><?php esc_html_e( 'Configuraciones de PMPro-WooCommerce Sync', 'pmpro-woo-sync' ); ?></h1>
+    <h1><?php esc_html_e( 'Configuraciones de PMPro-Woo-Sync', 'pmpro-woo-sync' ); ?></h1>
 
     <div id="pmpro-woo-sync-admin-notices"></div>
 
     <div class="pmpro-woo-sync-admin-header">
         <div class="pmpro-woo-sync-status-indicators">
-            <?php $this->render_status_indicators(); ?>
+            <?php 
+            // Renderizar indicadores de estado directamente
+            $sync_enabled = $this->settings->get_setting( 'enable_sync', 'yes' ) === 'yes';
+            $debug_mode = $this->settings->get_setting( 'debug_mode', 'no' ) === 'yes';
+            $pagbank_configured = ! empty( $this->settings->get_setting( 'pagbank_api_settings.api_key' ) );
+            ?>
+            <div class="pmpro-woo-sync-indicators">
+                <div class="indicator <?php echo $sync_enabled ? 'active' : 'inactive'; ?>">
+                    <span class="dashicons <?php echo $sync_enabled ? 'dashicons-yes-alt' : 'dashicons-dismiss'; ?>"></span>
+                    <?php esc_html_e( 'Sincronización', 'pmpro-woo-sync' ); ?>
+                </div>
+                
+                <div class="indicator <?php echo $debug_mode ? 'warning' : 'inactive'; ?>">
+                    <span class="dashicons <?php echo $debug_mode ? 'dashicons-warning' : 'dashicons-dismiss'; ?>"></span>
+                    <?php esc_html_e( 'Modo Debug', 'pmpro-woo-sync' ); ?>
+                </div>
+                
+                <div class="indicator <?php echo $pagbank_configured ? 'active' : 'inactive'; ?>">
+                    <span class="dashicons <?php echo $pagbank_configured ? 'dashicons-yes-alt' : 'dashicons-dismiss'; ?>"></span>
+                    <?php esc_html_e( 'PagBank API', 'pmpro-woo-sync' ); ?>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -92,42 +113,43 @@ if ( ! defined( 'ABSPATH' ) ) {
                     </div>
                 </div>
             </div>
+
+            <div class="pmpro-woo-sync-widget">
+                <h3><?php esc_html_e( 'Estado de Conexiones', 'pmpro-woo-sync' ); ?></h3>
+                
+                <div class="pmpro-woo-sync-connection-status">
+                    <?php 
+                    // Estado de PagBank
+                    $pagbank_api_key = $this->settings->get_setting( 'pagbank_api_settings.api_key' );
+                    $pagbank_mode = $this->settings->get_setting( 'pagbank_api_settings.mode', 'live' );
+                    ?>
+                    
+                    <div class="connection-item">
+                        <h4><?php esc_html_e( 'PagBank API:', 'pmpro-woo-sync' ); ?></h4>
+                        <?php if ( ! empty( $pagbank_api_key ) ) : ?>
+                            <span class="status-badge active">
+                                <span class="dashicons dashicons-yes-alt"></span>
+                                <?php esc_html_e( 'Configurado', 'pmpro-woo-sync' ); ?>
+                            </span>
+                            <p class="connection-details">
+                                <strong><?php esc_html_e( 'Modo:', 'pmpro-woo-sync' ); ?></strong> 
+                                <?php echo esc_html( ucfirst( $pagbank_mode ) ); ?>
+                                <?php if ( $pagbank_mode === 'sandbox' ) : ?>
+                                    <span class="mode-indicator sandbox"><?php esc_html_e( '(Pruebas)', 'pmpro-woo-sync' ); ?></span>
+                                <?php endif; ?>
+                            </p>
+                        <?php else : ?>
+                            <span class="status-badge inactive">
+                                <span class="dashicons dashicons-dismiss"></span>
+                                <?php esc_html_e( 'No Configurado', 'pmpro-woo-sync' ); ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
-
-<?php
-// Método helper para renderizar indicadores de estado
-if ( ! method_exists( 'PMPro_Woo_Sync_Admin', 'render_status_indicators' ) ) {
-    /**
-     * Renderiza indicadores de estado en la clase PMPro_Woo_Sync_Admin.
-     * Agregar este método a la clase principal.
-     */
-    function render_status_indicators() {
-        $sync_enabled = $this->settings->get_setting( 'enable_sync', 'yes' ) === 'yes';
-        $debug_mode = $this->settings->get_setting( 'debug_mode', 'no' ) === 'yes';
-        $pagbank_configured = ! empty( $this->settings->get_setting( 'pagbank_api_settings.api_key' ) );
-        ?>
-        <div class="pmpro-woo-sync-indicators">
-            <div class="indicator <?php echo $sync_enabled ? 'active' : 'inactive'; ?>">
-                <span class="dashicons <?php echo $sync_enabled ? 'dashicons-yes-alt' : 'dashicons-dismiss'; ?>"></span>
-                <?php esc_html_e( 'Sincronización', 'pmpro-woo-sync' ); ?>
-            </div>
-            
-            <div class="indicator <?php echo $debug_mode ? 'warning' : 'inactive'; ?>">
-                <span class="dashicons <?php echo $debug_mode ? 'dashicons-warning' : 'dashicons-dismiss'; ?>"></span>
-                <?php esc_html_e( 'Modo Debug', 'pmpro-woo-sync' ); ?>
-            </div>
-            
-            <div class="indicator <?php echo $pagbank_configured ? 'active' : 'inactive'; ?>">
-                <span class="dashicons <?php echo $pagbank_configured ? 'dashicons-yes-alt' : 'dashicons-dismiss'; ?>"></span>
-                <?php esc_html_e( 'PagBank API', 'pmpro-woo-sync' ); ?>
-            </div>
-        </div>
-        <?php
-    }
-}
-?>
 
 <script>
 jQuery(document).ready(function($) {
@@ -136,11 +158,110 @@ jQuery(document).ready(function($) {
         var apiKey = $('input[name*="[api_key]"]').val();
         
         if (apiKey && apiKey.length < 20) {
-            if (!confirm('<?php esc_js( __( 'La API Key parece ser muy corta. ¿Deseas continuar?', 'pmpro-woo-sync' ) ); ?>')) {
+            if (!confirm('<?php echo esc_js( __( 'La API Key parece ser muy corta. ¿Deseas continuar?', 'pmpro-woo-sync' ) ); ?>')) {
                 e.preventDefault();
                 return false;
             }
         }
     });
+
+    // Test de conexión PagBank
+    $('#test-pagbank-connection').on('click', function(e) {
+        e.preventDefault();
+        
+        var $button = $(this);
+        var originalText = $button.html();
+        
+        $button.html('<span class="dashicons dashicons-update spin"></span> <?php echo esc_js( __( 'Probando...', 'pmpro-woo-sync' ) ); ?>');
+        $button.prop('disabled', true);
+        
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'pmpro_woo_sync_test_connection',
+                gateway: 'pagbank',
+                nonce: '<?php echo wp_create_nonce( 'pmpro_woo_sync_admin_nonce' ); ?>'
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert('<?php echo esc_js( __( 'Conexión exitosa con PagBank', 'pmpro-woo-sync' ) ); ?>');
+                } else {
+                    alert('<?php echo esc_js( __( 'Error de conexión:', 'pmpro-woo-sync' ) ); ?> ' + (response.data.message || '<?php echo esc_js( __( 'Error desconocido', 'pmpro-woo-sync' ) ); ?>'));
+                }
+            },
+            error: function() {
+                alert('<?php echo esc_js( __( 'Error de conexión AJAX', 'pmpro-woo-sync' ) ); ?>');
+            },
+            complete: function() {
+                $button.html(originalText);
+                $button.prop('disabled', false);
+            }
+        });
+    });
 });
 </script>
+
+<style>
+/* Estilos adicionales para la página de configuraciones */
+.pmpro-woo-sync-connection-status .connection-item {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.pmpro-woo-sync-connection-status .connection-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.pmpro-woo-sync-connection-status h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #1d2327;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.active {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.status-badge.inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.connection-details {
+    margin: 8px 0 0 0;
+    font-size: 13px;
+    color: #646970;
+}
+
+.mode-indicator.sandbox {
+    color: #856404;
+    font-weight: 600;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>

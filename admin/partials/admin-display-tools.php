@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 
 <div class="wrap">
-    <h1><?php esc_html_e( 'Herramientas - PMPro-WooCommerce Sync', 'pmpro-woo-sync' ); ?></h1>
+    <h1><?php esc_html_e( 'Herramientas - PMPro-Woo-Sync', 'pmpro-woo-sync' ); ?></h1>
 
     <div id="pmpro-woo-sync-admin-notices"></div>
 

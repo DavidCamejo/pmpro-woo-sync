@@ -565,4 +565,31 @@ class PMPro_Woo_Sync_Admin {
         delete_option( PMPro_Woo_Sync_Settings::SETTINGS_OPTION_NAME );
         add_settings_error( 'pmpro_woo_sync_settings', 'settings_reset', __( 'Configuraciones reiniciadas a valores por defecto.', 'pmpro-woo-sync' ), 'updated' );
     }
+
+    /**
+     * Renderiza indicadores de estado en el header del admin.
+     */
+    public function render_status_indicators() {
+        $sync_enabled = $this->settings->get_setting( 'enable_sync', 'yes' ) === 'yes';
+        $debug_mode = $this->settings->get_setting( 'debug_mode', 'no' ) === 'yes';
+        $pagbank_configured = ! empty( $this->settings->get_setting( 'pagbank_api_settings.api_key' ) );
+        ?>
+        <div class="pmpro-woo-sync-indicators">
+            <div class="indicator <?php echo $sync_enabled ? 'active' : 'inactive'; ?>">
+                <span class="dashicons <?php echo $sync_enabled ? 'dashicons-yes-alt' : 'dashicons-dismiss'; ?>"></span>
+                <?php esc_html_e( 'Sincronización', 'pmpro-woo-sync' ); ?>
+            </div>
+            
+            <div class="indicator <?php echo $debug_mode ? 'warning' : 'inactive'; ?>">
+                <span class="dashicons <?php echo $debug_mode ? 'dashicons-warning' : 'dashicons-dismiss'; ?>"></span>
+                <?php esc_html_e( 'Modo Debug', 'pmpro-woo-sync' ); ?>
+            </div>
+            
+            <div class="indicator <?php echo $pagbank_configured ? 'active' : 'inactive'; ?>">
+                <span class="dashicons <?php echo $pagbank_configured ? 'dashicons-yes-alt' : 'dashicons-dismiss'; ?>"></span>
+                <?php esc_html_e( 'PagBank API', 'pmpro-woo-sync' ); ?>
+            </div>
+        </div>
+        <?php
+    }
 }
