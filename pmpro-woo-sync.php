@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name:    PMPro-WooCommerce Sync
+ * Plugin Name:    PMPro-Woo-Sync
  * Plugin URI:     https://github.com/DavidCamejo/pmpro-woo-sync
- * Description:    Resuelve problemas críticos de sincronización entre Paid Memberships Pro y WooCommerce Subscriptions para pagos recurrentes, especialmente con gateways externos como PagBank. Incluye cancelación bidireccional y sistema de reintentos inteligente.
+ * Description:    PMPro-Woo-Sync permite utilizar gateways de pagos recurrentes de WooCommeece, como PagBank Connect (Brasil), en Paid Memberships Pro. Esto sincroniza automáticamente los pagos recurrentes de WooCommerce con los estados de las suscripciones en Paid Memberships Pro.
  * Version:        1.0.0
  * Author:         David Camejo
  * Author URI:     https://github.com/DavidCamejo
