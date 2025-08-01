@@ -49,8 +49,8 @@ class PMPro_Woo_Sync_Admin {
     public function add_admin_menu_pages() {
         // Página principal (Configuraciones)
         $this->admin_pages['main'] = add_menu_page(
-            __( 'PMPro-Woo Sync', 'pmpro-woo-sync' ),
-            __( 'PMPro-Woo Sync', 'pmpro-woo-sync' ),
+            __( 'PMPro-Woo-Sync', 'pmpro-woo-sync' ),
+            __( 'PMPro-Woo-Sync', 'pmpro-woo-sync' ),
             'manage_options',
             'pmpro-woo-sync',
             array( $this, 'display_settings_page' ),
