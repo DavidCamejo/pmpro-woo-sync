@@ -1,4 +1,4 @@
-# PMPro-Woo Sync
+# PMPro-Woo-Sync
 
 ## 🎯 Finalidad
 
@@ -194,7 +194,7 @@ pmpro-woo-sync/
 
 3. **Activa** el plugin desde el panel de WordPress
 
-4. **Configura** navegando a **`PMPRO-Woo Sync`** en el menú lateral
+4. **Configura** navegando a **`PMPro-Woo-Sync`** en el menú lateral
 
 * * *
 
@@ -203,7 +203,7 @@ pmpro-woo-sync/
 
 ### Panel de Administración (Recomendado)
 
-Accede a: **WordPress Admin → PMPRO-Woo Sync**
+Accede a: **WordPress Admin → PMPro-Woo-Sync**
 
 #### Configuraciones Principales
 
@@ -248,7 +248,7 @@ add_filter('pmpro_woo_sync_api_timeout', function($timeout) {
 
 ### Dashboard de Logs Avanzado
 
-**WordPress Admin → PMPRO-Woo Sync → Logs**
+**WordPress Admin → PMPro-Woo-Sync → Logs**
 
 #### Características del Dashboard:
 
@@ -271,7 +271,7 @@ add_filter('pmpro_woo_sync_api_timeout', function($timeout) {
 
 ### Herramientas de Diagnóstico
 
-**WordPress Admin → PMPRO-Woo Sync → Herramientas**
+**WordPress Admin → PMPro-Woo-Sync → Herramientas**
 
 #### Herramientas Disponibles:
 
@@ -327,7 +327,7 @@ Array(
 📊 Estado del Sistema
 ---------------------
 
-**WordPress Admin → PMPRO-Woo Sync → Estado**
+**WordPress Admin → PMPro-Woo-Sync → Estado**
 
 ### Información Monitoreada:
 
@@ -373,7 +373,7 @@ Array(
 
 **Diagnóstico:**
 
-1. Verificar logs en: PMPRO-Woo Sync → Logs
+1. Verificar logs en: PMPro-Woo-Sync → Logs
 2. Filtrar por nivel "error" o "warning"
 3. Usar herramienta de debug específica para el usuario afectado
 
@@ -434,7 +434,7 @@ Array(
 
 #### Desde el Panel de Administración:
 
-**PMPRO-Woo Sync → Configuraciones → Habilitar Modo Debug**
+**PMPro-Woo-Sync → Configuraciones → Habilitar Modo Debug**
 
 #### Desde wp-config.php:
 
