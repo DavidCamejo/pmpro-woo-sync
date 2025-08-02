@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `class-pmpro-woo-sync-settings.php`
   - `class-pmpro-woo-sync-logger.php`
   - `class-pmpro-woo-sync-admin.php`
+    
     Todas las clases han sido optimizadas, documentadas y desacopladas de gateways o APIs externas.
 
 - **Refactorización de todos los archivos de la interfaz de administración:**  
