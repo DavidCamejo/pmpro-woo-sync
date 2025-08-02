@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+¡Por supuesto! Aquí tienes un **CHANGELOG profesional y detallado** para la versión 2.0.0 refactorizada de tu plugin **PMPro-Woo-Sync**:
+
+---
+
+# Changelog
+
+## [2.0.0] - 2024-08-01
+
+### 🚀 Refactorización mayor y simplificación de arquitectura
+
+- **Eliminada toda dependencia e integración con PagBank API:**  
+  Ahora el plugin se integra exclusivamente con WooCommerce y el plugin PagBank-WooCommerce, simplificando la lógica y mejorando la compatibilidad.
+
+- **Eliminada toda referencia y dependencia a WooCommerce Subscriptions:**  
+  El plugin ya no requiere ni detecta WooCommerce Subscriptions, ya que PagBank-WooCommerce gestiona las suscripciones y pagos recurrentes de forma nativa.
+
+- **Reescritura completa de la estructura de clases principales:**  
+  - `class-pmpro-woo-sync.php`
+  - `class-pmpro-woo-sync-integrations.php`
+  - `class-pmpro-woo-sync-settings.php`
+  - `class-pmpro-woo-sync-logger.php`
+  - `class-pmpro-woo-sync-admin.php`
+  Todas las clases han sido optimizadas, documentadas y desacopladas de gateways o APIs externas.
+
+- **Refactorización de todos los archivos de la interfaz de administración:**  
+  - Eliminadas secciones, textos y opciones relacionadas con PagBank y WooCommerce Subscriptions.
+  - Interfaz más clara, moderna y centrada en la sincronización entre PMPro y WooCommerce.
+
+- **Nuevas herramientas de administración y mantenimiento:**  
+  - Sincronización manual y masiva de usuarios.
+  - Reparación de enlaces de suscripciones.
+  - Limpieza de metadatos huérfanos y logs antiguos.
+  - Debug avanzado por usuario y exportación de información del sistema.
+  - Reinicio seguro de configuraciones.
+
+- **Sistema de logs mejorado:**  
+  - Filtros por nivel y búsqueda por palabra clave.
+  - Visualización clara y paginada.
+  - Contexto de logs en formato JSON legible.
+
+- **Mejoras de seguridad y experiencia de usuario:**  
+  - Nonces en todos los formularios.
+  - Confirmaciones para acciones peligrosas.
+  - Validaciones y mensajes claros.
+
+- **Internacionalización y documentación:**  
+  - Todos los textos preparados para traducción.
+  - Comentarios y docblocks actualizados.
+
+---
+
+**Notas importantes:**
+- Esta versión es incompatible con integraciones directas a PagBank API y ya no requiere WooCommerce Subscriptions.
+- Se recomienda revisar la configuración tras actualizar y realizar pruebas de sincronización.
+
+---
+
 ## [1.0.0] - 2024-07-30
 
 ### Added
