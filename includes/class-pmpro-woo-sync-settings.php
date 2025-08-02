@@ -1,472 +1,449 @@
 <?php
 /**
- * Clase para manejar los ajustes del plugin PMPRO-WooCommerce Sync.
+ * Clase de configuraciones del plugin
+ *
+ * @package PMPro_Woo_Sync
+ * @since 2.0.0
  */
+
+// Prevenir acceso directo
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
 class PMPro_Woo_Sync_Settings {
 
     /**
-     * Nombre de la opción en la base de datos donde se guardarán los ajustes.
+     * Nombre de la opción en la base de datos
+     *
      * @var string
      */
-    const SETTINGS_OPTION_NAME = 'pmpro_woo_sync_settings';
+    protected $option_name = 'pmpro_woo_sync_settings';
 
     /**
-     * Define el nombre del grupo de opciones para WordPress Settings API.
-     * @var string
-     */
-    const SETTINGS_GROUP_NAME = 'pmpro_woo_sync_option_group';
-
-    /**
-     * Cache de configuraciones para evitar múltiples consultas.
+     * Configuraciones por defecto
+     *
      * @var array
      */
-    protected $settings_cache;
+    protected $default_settings = array(
+        'enable_sync' => 1,
+        'debug_mode' => 0,
+        'log_retention_days' => 30,
+        'sync_on_hold_subscriptions' => 1,
+        'auto_link_products' => 1,
+        'record_payments_in_pmpro' => 1,
+    );
 
     /**
-     * Instancia de PMPro_Woo_Sync_Logger.
-     *
-     * @var PMPro_Woo_Sync_Logger
+     * Constructor
      */
-    protected $logger;
-
-    /**
-     * Constructor.
-     *
-     * @param PMPro_Woo_Sync_Logger $logger Instancia de la clase de logs.
-     */
-    public function __construct( PMPro_Woo_Sync_Logger $logger ) {
-        $this->logger = $logger;
-        
-        // Cargar configuraciones en cache
-        $this->settings_cache = get_option( self::SETTINGS_OPTION_NAME, $this->get_default_settings() );
-        
-        // Hooks
+    public function __construct() {
         add_action( 'admin_init', array( $this, 'register_settings' ) );
-        add_action( 'update_option_' . self::SETTINGS_OPTION_NAME, array( $this, 'on_settings_update' ), 10, 2 );
+        add_action( 'admin_menu', array( $this, 'add_settings_page' ) );
     }
 
     /**
-     * Define y retorna los ajustes predeterminados del plugin.
-     *
-     * @return array Array asociativo de ajustes predeterminados.
-     */
-    private function get_default_settings() {
-        return array(
-            'enable_sync'          => 'yes',
-            'debug_mode'           => 'no',
-            'enable_logging'       => 'yes',
-            'log_retention_days'   => 30,
-            'retry_attempts'       => 3,
-            'retry_delay'          => 300, // 5 minutos
-            'webhook_enabled'      => 'no',
-            'batch_size'           => 50,
-            'api_timeout'          => 30,
-            'pagbank_api_settings' => array(
-                'api_key' => '',
-                'mode'    => 'live',
-            ),
-            'sync_options' => array(
-                'bidirectional_sync'     => 'yes',
-                'auto_create_products'   => 'no',
-                'sync_membership_data'   => 'yes',
-                'handle_downgrades'      => 'yes',
-            ),
-        );
-    }
-
-    /**
-     * Retorna un ajuste específico o todos los ajustes si no se especifica una clave.
-     *
-     * @param string $key     Clave del ajuste a obtener.
-     * @param mixed  $default Valor por defecto si el ajuste no existe.
-     * @return mixed El valor del ajuste o el array completo de ajustes.
-     */
-    public function get_setting( $key = null, $default = null ) {
-        if ( null === $key ) {
-            return $this->settings_cache;
-        }
-
-        // Soporte para claves anidadas usando notación de punto
-        if ( strpos( $key, '.' ) !== false ) {
-            return $this->get_nested_setting( $key, $default );
-        }
-
-        return isset( $this->settings_cache[ $key ] ) ? $this->settings_cache[ $key ] : $default;
-    }
-
-    /**
-     * Obtiene configuración anidada usando notación de punto.
-     *
-     * @param string $key     Clave con notación de punto (ej: 'pagbank_api_settings.api_key').
-     * @param mixed  $default Valor por defecto.
-     * @return mixed
-     */
-    private function get_nested_setting( $key, $default = null ) {
-        $keys = explode( '.', $key );
-        $value = $this->settings_cache;
-
-        foreach ( $keys as $nested_key ) {
-            if ( isset( $value[ $nested_key ] ) ) {
-                $value = $value[ $nested_key ];
-            } else {
-                return $default;
-            }
-        }
-
-        return $value;
-    }
-
-    /**
-     * Actualiza una configuración específica.
-     *
-     * @param string $key   Clave del ajuste.
-     * @param mixed  $value Valor del ajuste.
-     * @return bool
-     */
-    public function update_setting( $key, $value ) {
-        $this->settings_cache[ $key ] = $value;
-        return update_option( self::SETTINGS_OPTION_NAME, $this->settings_cache );
-    }
-
-    /**
-     * Registra los ajustes, secciones y campos del plugin.
+     * Registrar configuraciones
      */
     public function register_settings() {
-        // Registrar grupo de ajustes con validación
         register_setting(
-            self::SETTINGS_GROUP_NAME,
-            self::SETTINGS_OPTION_NAME,
-            array(
-                'sanitize_callback' => array( $this, 'sanitize_settings' ),
-                'default'           => $this->get_default_settings(),
-            )
+            'pmpro_woo_sync_settings_group',
+            $this->option_name,
+            array( $this, 'sanitize_settings' )
         );
 
-        // Sección de Ajustes Generales
+        // Sección principal
         add_settings_section(
-            'pmpro_woo_sync_general_section',
-            __( 'Ajustes Generales', 'pmpro-woo-sync' ),
-            array( $this, 'print_general_section_info' ),
+            'pmpro_woo_sync_main_section',
+            __( 'Configuración General', 'pmpro-woo-sync' ),
+            array( $this, 'main_section_callback' ),
             'pmpro-woo-sync'
         );
 
-        // Campos de Ajustes Generales
-        $this->add_general_fields();
-
-        // Sección de Ajustes de PagBank
-        add_settings_section(
-            'pmpro_woo_sync_pagbank_section',
-            __( 'Ajustes de PagBank', 'pmpro-woo-sync' ),
-            array( $this, 'print_pagbank_section_info' ),
-            'pmpro-woo-sync'
-        );
-
-        // Campos de PagBank
-        $this->add_pagbank_fields();
-
-        // Sección de Sincronización Avanzada
-        add_settings_section(
-            'pmpro_woo_sync_advanced_section',
-            __( 'Opciones Avanzadas de Sincronización', 'pmpro-woo-sync' ),
-            array( $this, 'print_advanced_section_info' ),
-            'pmpro-woo-sync'
-        );
-
-        // Campos avanzados
-        $this->add_advanced_fields();
-    }
-
-    /**
-     * Agrega campos de configuración general.
-     */
-    private function add_general_fields() {
+        // Campo: Habilitar sincronización
         add_settings_field(
             'enable_sync',
             __( 'Habilitar Sincronización', 'pmpro-woo-sync' ),
-            array( $this, 'enable_sync_callback' ),
+            array( $this, 'render_enable_sync_field' ),
             'pmpro-woo-sync',
-            'pmpro_woo_sync_general_section'
+            'pmpro_woo_sync_main_section'
         );
 
-        add_settings_field(
-            'enable_logging',
-            __( 'Habilitar Logging', 'pmpro-woo-sync' ),
-            array( $this, 'enable_logging_callback' ),
-            'pmpro-woo-sync',
-            'pmpro_woo_sync_general_section'
-        );
-
+        // Campo: Modo debug
         add_settings_field(
             'debug_mode',
-            __( 'Modo Depuración', 'pmpro-woo-sync' ),
-            array( $this, 'debug_mode_callback' ),
+            __( 'Modo Debug', 'pmpro-woo-sync' ),
+            array( $this, 'render_debug_mode_field' ),
             'pmpro-woo-sync',
-            'pmpro_woo_sync_general_section'
+            'pmpro_woo_sync_main_section'
         );
 
+        // Campo: Retención de logs
         add_settings_field(
             'log_retention_days',
-            __( 'Días de Retención de Logs', 'pmpro-woo-sync' ),
-            array( $this, 'log_retention_callback' ),
+            __( 'Retención de Logs (días)', 'pmpro-woo-sync' ),
+            array( $this, 'render_log_retention_field' ),
             'pmpro-woo-sync',
-            'pmpro_woo_sync_general_section'
-        );
-    }
-
-    /**
-     * Agrega campos de configuración de PagBank.
-     */
-    private function add_pagbank_fields() {
-        add_settings_field(
-            'pagbank_api_key',
-            __( 'API Key de PagBank', 'pmpro-woo-sync' ),
-            array( $this, 'pagbank_api_key_callback' ),
-            'pmpro-woo-sync',
-            'pmpro_woo_sync_pagbank_section'
+            'pmpro_woo_sync_main_section'
         );
 
-        add_settings_field(
-            'pagbank_mode',
-            __( 'Modo de PagBank', 'pmpro-woo-sync' ),
-            array( $this, 'pagbank_mode_callback' ),
-            'pmpro-woo-sync',
-            'pmpro_woo_sync_pagbank_section'
+        // Sección de sincronización avanzada
+        add_settings_section(
+            'pmpro_woo_sync_advanced_section',
+            __( 'Configuración Avanzada', 'pmpro-woo-sync' ),
+            array( $this, 'advanced_section_callback' ),
+            'pmpro-woo-sync'
         );
-    }
 
-    /**
-     * Agrega campos de configuración avanzada.
-     */
-    private function add_advanced_fields() {
+        // Campo: Sincronizar suscripciones en espera
         add_settings_field(
-            'retry_attempts',
-            __( 'Intentos de Reintento', 'pmpro-woo-sync' ),
-            array( $this, 'retry_attempts_callback' ),
+            'sync_on_hold_subscriptions',
+            __( 'Sincronizar Suscripciones en Espera', 'pmpro-woo-sync' ),
+            array( $this, 'render_sync_on_hold_field' ),
             'pmpro-woo-sync',
             'pmpro_woo_sync_advanced_section'
         );
 
+        // Campo: Auto-vincular productos
         add_settings_field(
-            'batch_size',
-            __( 'Tamaño de Lote', 'pmpro-woo-sync' ),
-            array( $this, 'batch_size_callback' ),
+            'auto_link_products',
+            __( 'Auto-vincular Productos', 'pmpro-woo-sync' ),
+            array( $this, 'render_auto_link_field' ),
             'pmpro-woo-sync',
             'pmpro_woo_sync_advanced_section'
         );
 
+        // Campo: Registrar pagos en PMPro
         add_settings_field(
-            'bidirectional_sync',
-            __( 'Sincronización Bidireccional', 'pmpro-woo-sync' ),
-            array( $this, 'bidirectional_sync_callback' ),
+            'record_payments_in_pmpro',
+            __( 'Registrar Pagos en PMPro', 'pmpro-woo-sync' ),
+            array( $this, 'render_record_payments_field' ),
             'pmpro-woo-sync',
             'pmpro_woo_sync_advanced_section'
         );
     }
 
     /**
-     * Callbacks para mostrar información de secciones.
+     * Agregar página de configuraciones al menú
      */
-    public function print_general_section_info() {
-        echo '<p>' . esc_html__( 'Configure las opciones generales del plugin de sincronización.', 'pmpro-woo-sync' ) . '</p>';
-    }
-
-    public function print_pagbank_section_info() {
-        echo '<p>' . esc_html__( 'Configure las credenciales y opciones de la API de PagBank.', 'pmpro-woo-sync' ) . '</p>';
-    }
-
-    public function print_advanced_section_info() {
-        echo '<p>' . esc_html__( 'Configuraciones avanzadas para usuarios experimentados.', 'pmpro-woo-sync' ) . '</p>';
+    public function add_settings_page() {
+        add_options_page(
+            __( 'PMPro-Woo-Sync', 'pmpro-woo-sync' ),
+            __( 'PMPro-Woo-Sync', 'pmpro-woo-sync' ),
+            'manage_options',
+            'pmpro-woo-sync-settings',
+            array( $this, 'render_settings_page' )
+        );
     }
 
     /**
-     * Callbacks para campos de configuración.
+     * Callback de la sección principal
      */
-    public function enable_sync_callback() {
-        $value = $this->get_setting( 'enable_sync', 'yes' );
-        $checked = checked( 'yes', $value, false );
+    public function main_section_callback() {
+        echo '<p>' . __( 'Configuraciones principales para la sincronización entre WooCommerce y Paid Memberships Pro.', 'pmpro-woo-sync' ) . '</p>';
+    }
+
+    /**
+     * Callback de la sección avanzada
+     */
+    public function advanced_section_callback() {
+        echo '<p>' . __( 'Configuraciones avanzadas para usuarios experimentados.', 'pmpro-woo-sync' ) . '</p>';
+    }
+
+    /**
+     * Renderizar campo de habilitar sincronización
+     */
+    public function render_enable_sync_field() {
+        $options = $this->get_settings();
         ?>
         <label>
-            <input type="checkbox" name="<?php echo esc_attr( self::SETTINGS_OPTION_NAME ); ?>[enable_sync]" value="yes" <?php echo $checked; ?> />
-            <?php esc_html_e( 'Activar sincronización entre PMPro y WooCommerce', 'pmpro-woo-sync' ); ?>
+            <input type="checkbox" 
+                   name="<?php echo esc_attr( $this->option_name ); ?>[enable_sync]" 
+                   value="1" 
+                   <?php checked( 1, $options['enable_sync'] ); ?> />
+            <?php _e( 'Sincronizar automáticamente membresías con suscripciones WooCommerce', 'pmpro-woo-sync' ); ?>
         </label>
-        <?php
-    }
-
-    public function enable_logging_callback() {
-        $value = $this->get_setting( 'enable_logging', 'yes' );
-        $checked = checked( 'yes', $value, false );
-        ?>
-        <label>
-            <input type="checkbox" name="<?php echo esc_attr( self::SETTINGS_OPTION_NAME ); ?>[enable_logging]" value="yes" <?php echo $checked; ?> />
-            <?php esc_html_e( 'Habilitar sistema de logging', 'pmpro-woo-sync' ); ?>
-        </label>
-        <p class="description"><?php esc_html_e( 'Desactivar para mejorar rendimiento si no necesitas logs.', 'pmpro-woo-sync' ); ?></p>
-        <?php
-    }
-
-    public function debug_mode_callback() {
-        $value = $this->get_setting( 'debug_mode', 'no' );
-        $checked = checked( 'yes', $value, false );
-        ?>
-        <label>
-            <input type="checkbox" name="<?php echo esc_attr( self::SETTINGS_OPTION_NAME ); ?>[debug_mode]" value="yes" <?php echo $checked; ?> />
-            <?php esc_html_e( 'Activar modo de depuración', 'pmpro-woo-sync' ); ?>
-        </label>
-        <p class="description"><?php esc_html_e( 'Genera logs más detallados para troubleshooting.', 'pmpro-woo-sync' ); ?></p>
-        <?php
-    }
-
-    public function log_retention_callback() {
-        $value = $this->get_setting( 'log_retention_days', 30 );
-        ?>
-        <input type="number" min="0" max="365" name="<?php echo esc_attr( self::SETTINGS_OPTION_NAME ); ?>[log_retention_days]" value="<?php echo esc_attr( $value ); ?>" />
-        <p class="description"><?php esc_html_e( 'Días que se conservarán los logs. 0 = mantener indefinidamente.', 'pmpro-woo-sync' ); ?></p>
-        <?php
-    }
-
-    public function pagbank_api_key_callback() {
-        $value = $this->get_setting( 'pagbank_api_settings.api_key', '' );
-        ?>
-        <input type="password" class="regular-text" name="<?php echo esc_attr( self::SETTINGS_OPTION_NAME ); ?>[pagbank_api_settings][api_key]" value="<?php echo esc_attr( $value ); ?>" placeholder="<?php esc_attr_e( 'Ingresa tu API Key de PagBank', 'pmpro-woo-sync' ); ?>" />
-        <button type="button" class="button" onclick="this.previousElementSibling.type = this.previousElementSibling.type === 'password' ? 'text' : 'password'">
-            <?php esc_html_e( 'Mostrar/Ocultar', 'pmpro-woo-sync' ); ?>
-        </button>
-        <p class="description"><?php esc_html_e( 'API Key de PagBank para realizar solicitudes autenticadas.', 'pmpro-woo-sync' ); ?></p>
-        <?php
-    }
-
-    public function pagbank_mode_callback() {
-        $value = $this->get_setting( 'pagbank_api_settings.mode', 'live' );
-        ?>
-        <select name="<?php echo esc_attr( self::SETTINGS_OPTION_NAME ); ?>[pagbank_api_settings][mode]">
-            <option value="live" <?php selected( $value, 'live' ); ?>><?php esc_html_e( 'Producción', 'pmpro-woo-sync' ); ?></option>
-            <option value="sandbox" <?php selected( $value, 'sandbox' ); ?>><?php esc_html_e( 'Sandbox (Pruebas)', 'pmpro-woo-sync' ); ?></option>
-        </select>
-        <p class="description"><?php esc_html_e( 'Ambiente de PagBank a utilizar.', 'pmpro-woo-sync' ); ?></p>
-        <?php
-    }
-
-    public function retry_attempts_callback() {
-        $value = $this->get_setting( 'retry_attempts', 3 );
-        ?>
-        <input type="number" min="0" max="10" name="<?php echo esc_attr( self::SETTINGS_OPTION_NAME ); ?>[retry_attempts]" value="<?php echo esc_attr( $value ); ?>" />
-        <p class="description"><?php esc_html_e( 'Número de reintentos para operaciones fallidas.', 'pmpro-woo-sync' ); ?></p>
-        <?php
-    }
-
-    public function batch_size_callback() {
-        $value = $this->get_setting( 'batch_size', 50 );
-        ?>
-        <input type="number" min="1" max="200" name="<?php echo esc_attr( self::SETTINGS_OPTION_NAME ); ?>[batch_size]" value="<?php echo esc_attr( $value ); ?>" />
-        <p class="description"><?php esc_html_e( 'Número de elementos a procesar por lote en operaciones masivas.', 'pmpro-woo-sync' ); ?></p>
-        <?php
-    }
-
-    public function bidirectional_sync_callback() {
-        $value = $this->get_setting( 'sync_options.bidirectional_sync', 'yes' );
-        $checked = checked( 'yes', $value, false );
-        ?>
-        <label>
-            <input type="checkbox" name="<?php echo esc_attr( self::SETTINGS_OPTION_NAME ); ?>[sync_options][bidirectional_sync]" value="yes" <?php echo $checked; ?> />
-            <?php esc_html_e( 'Permitir sincronización en ambas direcciones', 'pmpro-woo-sync' ); ?>
-        </label>
-        <p class="description"><?php esc_html_e( 'Sincronizar cambios tanto de PMPro a WooCommerce como viceversa.', 'pmpro-woo-sync' ); ?></p>
+        <p class="description">
+            <?php _e( 'Cuando está habilitado, los cambios en las suscripciones de WooCommerce se reflejarán automáticamente en las membresías de PMPro.', 'pmpro-woo-sync' ); ?>
+        </p>
         <?php
     }
 
     /**
-     * Sanea y valida los ajustes antes de guardarlos.
+     * Renderizar campo de modo debug
+     */
+    public function render_debug_mode_field() {
+        $options = $this->get_settings();
+        ?>
+        <label>
+            <input type="checkbox" 
+                   name="<?php echo esc_attr( $this->option_name ); ?>[debug_mode]" 
+                   value="1" 
+                   <?php checked( 1, $options['debug_mode'] ); ?> />
+            <?php _e( 'Habilitar logging detallado para troubleshooting', 'pmpro-woo-sync' ); ?>
+        </label>
+        <p class="description">
+            <?php _e( 'Solo habilitar temporalmente para diagnosticar problemas. Puede generar muchos logs.', 'pmpro-woo-sync' ); ?>
+        </p>
+        <?php
+    }
+
+    /**
+     * Renderizar campo de retención de logs
+     */
+    public function render_log_retention_field() {
+        $options = $this->get_settings();
+        ?>
+        <input type="number" 
+               name="<?php echo esc_attr( $this->option_name ); ?>[log_retention_days]" 
+               value="<?php echo esc_attr( $options['log_retention_days'] ); ?>" 
+               min="1" 
+               max="365" 
+               class="small-text" />
+        <p class="description">
+            <?php _e( 'Número de días que se conservarán los logs antes de ser eliminados automáticamente.', 'pmpro-woo-sync' ); ?>
+        </p>
+        <?php
+    }
+
+    /**
+     * Renderizar campo de sincronizar suscripciones en espera
+     */
+    public function render_sync_on_hold_field() {
+        $options = $this->get_settings();
+        ?>
+        <label>
+            <input type="checkbox" 
+                   name="<?php echo esc_attr( $this->option_name ); ?>[sync_on_hold_subscriptions]" 
+                   value="1" 
+                   <?php checked( 1, $options['sync_on_hold_subscriptions'] ); ?> />
+            <?php _e( 'Cancelar membresías cuando las suscripciones están en espera', 'pmpro-woo-sync' ); ?>
+        </label>
+        <p class="description">
+            <?php _e( 'Si está deshabilitado, las suscripciones en espera no afectarán las membresías activas.', 'pmpro-woo-sync' ); ?>
+        </p>
+        <?php
+    }
+
+    /**
+     * Renderizar campo de auto-vincular productos
+     */
+    public function render_auto_link_field() {
+        $options = $this->get_settings();
+        ?>
+        <label>
+            <input type="checkbox" 
+                   name="<?php echo esc_attr( $this->option_name ); ?>[auto_link_products]" 
+                   value="1" 
+                   <?php checked( 1, $options['auto_link_products'] ); ?> />
+            <?php _e( 'Vincular automáticamente productos con niveles de membresía', 'pmpro-woo-sync' ); ?>
+        </label>
+        <p class="description">
+            <?php _e( 'Busca automáticamente la vinculación entre productos WooCommerce y niveles PMPro.', 'pmpro-woo-sync' ); ?>
+        </p>
+        <?php
+    }
+
+    /**
+     * Renderizar campo de registrar pagos en PMPro
+     */
+    public function render_record_payments_field() {
+        $options = $this->get_settings();
+        ?>
+        <label>
+            <input type="checkbox" 
+                   name="<?php echo esc_attr( $this->option_name ); ?>[record_payments_in_pmpro]" 
+                   value="1" 
+                   <?php checked( 1, $options['record_payments_in_pmpro'] ); ?> />
+            <?php _e( 'Registrar pagos de renovación en el historial de PMPro', 'pmpro-woo-sync' ); ?>
+        </label>
+        <p class="description">
+            <?php _e( 'Crea registros de pago en PMPro cuando se procesan renovaciones exitosas.', 'pmpro-woo-sync' ); ?>
+        </p>
+        <?php
+    }
+
+    /**
+     * Renderizar página de configuraciones
+     */
+    public function render_settings_page() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        // Mostrar mensajes de actualización
+        if ( isset( $_GET['settings-updated'] ) ) {
+            add_settings_error(
+                'pmpro_woo_sync_messages',
+                'pmpro_woo_sync_message',
+                __( 'Configuraciones guardadas.', 'pmpro-woo-sync' ),
+                'updated'
+            );
+        }
+
+        settings_errors( 'pmpro_woo_sync_messages' );
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+            
+            <div class="pmpro-woo-sync-settings-header">
+                <p><?php _e( 'Configura la sincronización automática entre WooCommerce Subscriptions y Paid Memberships Pro.', 'pmpro-woo-sync' ); ?></p>
+            </div>
+
+            <form action="options.php" method="post">
+                <?php
+                settings_fields( 'pmpro_woo_sync_settings_group' );
+                do_settings_sections( 'pmpro-woo-sync' );
+                submit_button( __( 'Guardar Configuraciones', 'pmpro-woo-sync' ) );
+                ?>
+            </form>
+
+            <div class="pmpro-woo-sync-settings-footer">
+                <h3><?php _e( 'Estado del Sistema', 'pmpro-woo-sync' ); ?></h3>
+                <?php $this->render_system_status(); ?>
+            </div>
+        </div>
+
+        <style>
+        .pmpro-woo-sync-settings-header {
+            background: #f1f1f1;
+            padding: 15px;
+            border-left: 4px solid #0073aa;
+            margin: 20px 0;
+        }
+        .pmpro-woo-sync-settings-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        .system-status-item {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .status-ok { background-color: #46b450; }
+        .status-warning { background-color: #ffb900; }
+        .status-error { background-color: #dc3232; }
+        </style>
+        <?php
+    }
+
+    /**
+     * Renderizar estado del sistema
+     */
+    private function render_system_status() {
+        $status_items = array(
+            array(
+                'label' => __( 'Paid Memberships Pro', 'pmpro-woo-sync' ),
+                'status' => function_exists( 'pmpro_getLevel' ) ? 'ok' : 'error',
+                'message' => function_exists( 'pmpro_getLevel' ) ? __( 'Activo', 'pmpro-woo-sync' ) : __( 'No instalado', 'pmpro-woo-sync' ),
+            ),
+            array(
+                'label' => __( 'WooCommerce', 'pmpro-woo-sync' ),
+                'status' => class_exists( 'WooCommerce' ) ? 'ok' : 'error',
+                'message' => class_exists( 'WooCommerce' ) ? __( 'Activo', 'pmpro-woo-sync' ) : __( 'No instalado', 'pmpro-woo-sync' ),
+            ),
+            array(
+                'label' => __( 'WooCommerce Subscriptions', 'pmpro-woo-sync' ),
+                'status' => class_exists( 'WC_Subscriptions' ) ? 'ok' : 'warning',
+                'message' => class_exists( 'WC_Subscriptions' ) ? __( 'Activo', 'pmpro-woo-sync' ) : __( 'Recomendado', 'pmpro-woo-sync' ),
+            ),
+            array(
+                'label' => __( 'Sincronización', 'pmpro-woo-sync' ),
+                'status' => $this->is_sync_enabled() ? 'ok' : 'warning',
+                'message' => $this->is_sync_enabled() ? __( 'Habilitada', 'pmpro-woo-sync' ) : __( 'Deshabilitada', 'pmpro-woo-sync' ),
+            ),
+        );
+
+        foreach ( $status_items as $item ) {
+            echo '<div class="system-status-item">';
+            echo '<span class="status-indicator status-' . esc_attr( $item['status'] ) . '"></span>';
+            echo '<strong>' . esc_html( $item['label'] ) . ':</strong> ';
+            echo esc_html( $item['message'] );
+            echo '</div>';
+        }
+    }
+
+    /**
+     * Sanitizar configuraciones
      *
-     * @param array $input Los datos de entrada del formulario.
-     * @return array Los datos saneados y validados.
+     * @param array $input
+     * @return array
      */
     public function sanitize_settings( $input ) {
-        $sanitized = array();
+        $output = array();
 
-        // Configuraciones generales
-        $sanitized['enable_sync'] = isset( $input['enable_sync'] ) ? 'yes' : 'no';
-        $sanitized['enable_logging'] = isset( $input['enable_logging'] ) ? 'yes' : 'no';
-        $sanitized['debug_mode'] = isset( $input['debug_mode'] ) ? 'yes' : 'no';
-        $sanitized['log_retention_days'] = isset( $input['log_retention_days'] ) ? absint( $input['log_retention_days'] ) : 30;
-        $sanitized['retry_attempts'] = isset( $input['retry_attempts'] ) ? max( 0, min( 10, absint( $input['retry_attempts'] ) ) ) : 3;
-        $sanitized['batch_size'] = isset( $input['batch_size'] ) ? max( 1, min( 200, absint( $input['batch_size'] ) ) ) : 50;
+        // Sanitizar cada campo
+        $output['enable_sync'] = isset( $input['enable_sync'] ) ? 1 : 0;
+        $output['debug_mode'] = isset( $input['debug_mode'] ) ? 1 : 0;
+        $output['log_retention_days'] = isset( $input['log_retention_days'] ) ? absint( $input['log_retention_days'] ) : 30;
+        $output['sync_on_hold_subscriptions'] = isset( $input['sync_on_hold_subscriptions'] ) ? 1 : 0;
+        $output['auto_link_products'] = isset( $input['auto_link_products'] ) ? 1 : 0;
+        $output['record_payments_in_pmpro'] = isset( $input['record_payments_in_pmpro'] ) ? 1 : 0;
 
-        // Configuraciones de PagBank
-        if ( isset( $input['pagbank_api_settings'] ) ) {
-            $sanitized['pagbank_api_settings'] = array(
-                'api_key' => sanitize_text_field( $input['pagbank_api_settings']['api_key'] ?? '' ),
-                'mode'    => in_array( $input['pagbank_api_settings']['mode'] ?? 'live', array( 'live', 'sandbox' ) ) 
-                           ? $input['pagbank_api_settings']['mode'] 
-                           : 'live',
-            );
+        // Validaciones
+        if ( $output['log_retention_days'] < 1 ) {
+            $output['log_retention_days'] = 1;
+        }
+        if ( $output['log_retention_days'] > 365 ) {
+            $output['log_retention_days'] = 365;
         }
 
-        // Opciones de sincronización
-        if ( isset( $input['sync_options'] ) ) {
-            $sanitized['sync_options'] = array(
-                'bidirectional_sync' => isset( $input['sync_options']['bidirectional_sync'] ) ? 'yes' : 'no',
-            );
-        }
-
-        // Conservar configuraciones no presentes en el formulario
-        $current_settings = $this->settings_cache;
-        $sanitized = array_merge( $current_settings, $sanitized );
-
-        $this->logger->info( 'Configuraciones del plugin actualizadas', array( 'changed_settings' => array_keys( $sanitized ) ) );
-
-        return $sanitized;
+        return $output;
     }
 
     /**
-     * Callback ejecutado cuando se actualizan las configuraciones.
-     *
-     * @param array $old_value Valor anterior.
-     * @param array $new_value Nuevo valor.
-     */
-    public function on_settings_update( $old_value, $new_value ) {
-        // Actualizar cache
-        $this->settings_cache = $new_value;
-        
-        // Log de cambios significativos
-        $significant_changes = array( 'enable_sync', 'debug_mode', 'pagbank_api_settings' );
-        foreach ( $significant_changes as $key ) {
-            if ( isset( $old_value[ $key ] ) && isset( $new_value[ $key ] ) && $old_value[ $key ] !== $new_value[ $key ] ) {
-                $this->logger->info( "Configuración crítica cambiada: {$key}", array(
-                    'old_value' => $old_value[ $key ],
-                    'new_value' => $new_value[ $key ],
-                ));
-            }
-        }
-    }
-
-    /**
-     * Obtiene todas las configuraciones (alias para get_setting sin parámetros).
+     * Obtener configuraciones con valores por defecto
      *
      * @return array
      */
     public function get_settings() {
-        return $this->get_setting();
+        $settings = get_option( $this->option_name, array() );
+        return wp_parse_args( $settings, $this->default_settings );
     }
 
     /**
-     * Valida si una API key de PagBank tiene formato válido.
+     * Obtener una configuración específica
      *
-     * @param string $api_key La API key a validar.
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
+     */
+    public function get_setting( $key, $default = null ) {
+        $settings = $this->get_settings();
+        return isset( $settings[ $key ] ) ? $settings[ $key ] : $default;
+    }
+
+    /**
+     * Verificar si la sincronización está habilitada
+     *
      * @return bool
      */
-    public function validate_pagbank_api_key( $api_key ) {
-        // PagBank API keys típicamente tienen un formato específico
-        return ! empty( $api_key ) && strlen( $api_key ) >= 20;
+    public function is_sync_enabled() {
+        return (bool) $this->get_setting( 'enable_sync', true );
     }
 
     /**
-     * Obtiene la configuración de un gateway específico.
+     * Verificar si el modo debug está habilitado
      *
-     * @param string $gateway_id ID del gateway.
-     * @return array
+     * @return bool
      */
-    public function get_gateway_settings( $gateway_id ) {
-        $settings_key = $gateway_id . '_api_settings';
-        return $this->get_setting( $settings_key, array() );
+    public function is_debug_enabled() {
+        return (bool) $this->get_setting( 'debug_mode', false );
+    }
+
+    /**
+     * Obtener días de retención de logs
+     *
+     * @return int
+     */
+    public function get_log_retention_days() {
+        return (int) $this->get_setting( 'log_retention_days', 30 );
     }
 }

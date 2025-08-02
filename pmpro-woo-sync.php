@@ -2,8 +2,8 @@
 /**
  * Plugin Name:    PMPro-Woo-Sync
  * Plugin URI:     https://github.com/DavidCamejo/pmpro-woo-sync
- * Description:    PMPro-Woo-Sync permite utilizar gateways de pagos recurrentes de WooCommeece, como PagBank Connect (Brasil), en Paid Memberships Pro. Esto sincroniza automáticamente los pagos recurrentes de WooCommerce con los estados de las suscripciones en Paid Memberships Pro.
- * Version:        1.0.0
+ * Description:    PMPro-Woo-Sync sincroniza automáticamente los estados de suscripciones de WooCommerce con las membresías de Paid Memberships Pro. Compatible con cualquier gateway de pago que use los hooks estándar de WooCommerce.
+ * Version:        2.0.0
  * Author:         David Camejo
  * Author URI:     https://github.com/DavidCamejo
  * License:        MIT
@@ -30,7 +30,7 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Información y constantes del plugin.
  */
-define( 'PMPRO_WOO_SYNC_VERSION', '1.0.0' );
+define( 'PMPRO_WOO_SYNC_VERSION', '2.0.0' );
 define( 'PMPRO_WOO_SYNC_PLUGIN_FILE', __FILE__ );
 define( 'PMPRO_WOO_SYNC_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PMPRO_WOO_SYNC_URL', plugin_dir_url( __FILE__ ) );
@@ -159,8 +159,6 @@ spl_autoload_register( function ( $class_name ) {
         'PMPro_Woo_Sync_Logger'            => 'includes/class-pmpro-woo-sync-logger.php',
         'PMPro_Woo_Sync_Settings'          => 'includes/class-pmpro-woo-sync-settings.php',
         'PMPro_Woo_Sync_Integrations'      => 'includes/class-pmpro-woo-sync-integrations.php',
-        'PMPro_Woo_Sync_Gateway_Manager'   => 'includes/class-pmpro-woo-sync-gateway-manager.php',
-        'PMPro_Woo_Sync_PagBank_API'       => 'includes/gateways/class-pmpro-woo-sync-pagbank-api.php',
         'PMPro_Woo_Sync_Admin'             => 'admin/class-pmpro-woo-sync-admin.php',
     );
     
@@ -178,7 +176,6 @@ spl_autoload_register( function ( $class_name ) {
     $directories = array(
         PMPRO_WOO_SYNC_PATH . 'includes/',
         PMPRO_WOO_SYNC_PATH . 'admin/',
-        PMPRO_WOO_SYNC_PATH . 'includes/gateways/',
     );
     
     foreach ( $directories as $directory ) {

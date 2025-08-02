@@ -1,172 +1,118 @@
 <?php
 /**
- * Clase principal del plugin PMPRO-WooCommerce Sync.
- * Orquesta la carga de otras clases y maneja los hooks principales.
+ * Clase principal del plugin PMPro-Woo-Sync
+ *
+ * @package PMPro_Woo_Sync
+ * @since 2.0.0
  */
+
+// Prevenir acceso directo
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
 class PMPro_Woo_Sync {
 
     /**
-     * Instancia de la clase PMPro_Woo_Sync_Admin.
+     * Instancia única del plugin
      *
-     * @var PMPro_Woo_Sync_Admin
+     * @var PMPro_Woo_Sync
      */
-    protected $admin;
+    private static $instance = null;
 
     /**
-     * Instancia de la clase PMPro_Woo_Sync_Settings.
+     * Versión del plugin
      *
-     * @var PMPro_Woo_Sync_Settings
+     * @var string
      */
-    protected $settings;
+    public $version = '2.0.0';
 
     /**
-     * Instancia de la clase PMPro_Woo_Sync_Logger.
-     *
-     * @var PMPro_Woo_Sync_Logger
-     */
-    protected $logger;
-
-    /**
-     * Instancia de la clase PMPro_Woo_Sync_Integrations.
-     *
-     * @var PMPro_Woo_Sync_Integrations
-     */
-    protected $integrations;
-
-    /**
-     * Constructor de la clase.
-     * Carga las dependencias y define los hooks.
+     * Constructor
      */
     public function __construct() {
-        $this->load_dependencies();
-        $this->define_admin_hooks();
-        $this->define_public_hooks();
+        $this->define_constants();
+        $this->init_hooks();
     }
 
     /**
-     * Carga las dependencias del plugin.
-     * Instancia las clases necesarias.
+     * Obtener instancia única del plugin
      *
-     * @since 1.0.0
-     * @access private
+     * @return PMPro_Woo_Sync
      */
-    private function load_dependencies() {
-        // Inicializa el sistema de logs.
-        $this->logger = new PMPro_Woo_Sync_Logger();
-
-        // Inicializa la gestión de ajustes.
-        $this->settings = new PMPro_Woo_Sync_Settings( $this->logger );
-
-        // Inicializa la interfaz de administración.
-        $this->admin = new PMPro_Woo_Sync_Admin( $this->settings, $this->logger );
-
-        // Inicializa la lógica de integración.
-        $this->integrations = new PMPro_Woo_Sync_Integrations( $this->settings, $this->logger );
-        
-        // Log de inicialización exitosa
-        $this->logger->log( 'info', 'Plugin PMPRO-Woo-Sync inicializado correctamente.' );
+    public static function get_instance() {
+        if ( null === self::$instance ) {
+            self::$instance = new self();
+        }
+        return self::$instance;
     }
 
     /**
-     * Registra los hooks relacionados con el área de administración.
-     *
-     * @since 1.0.0
-     * @access private
+     * Definir constantes del plugin
      */
-    private function define_admin_hooks() {
-        // Cargar scripts y estilos para el admin.
-        add_action( 'admin_enqueue_scripts', array( $this->admin, 'enqueue_styles' ) );
-        add_action( 'admin_enqueue_scripts', array( $this->admin, 'enqueue_scripts' ) );
-
-        // Añadir páginas de menú en el admin.
-        add_action( 'admin_menu', array( $this->admin, 'add_admin_menu_pages' ) );
-
-        // Registrar ajustes del plugin.
-        add_action( 'admin_init', array( $this->settings, 'register_settings' ) );
-        
-        // Hook para mostrar avisos de admin
-        add_action( 'admin_notices', array( $this, 'show_admin_notices' ) );
+    private function define_constants() {
+        if ( ! defined( 'PMPRO_WOO_SYNC_PLUGIN_VERSION' ) ) {
+            define( 'PMPRO_WOO_SYNC_PLUGIN_VERSION', $this->version );
+        }
     }
 
     /**
-     * Registra los hooks relacionados con el área pública y la lógica principal.
-     *
-     * @since 1.0.0
-     * @access private
+     * Inicializar hooks principales
      */
-    private function define_public_hooks() {
-        // Cargar el dominio de texto para la internacionalización.
-        add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
-
-        // Hooks de PMPro → WooCommerce
-        add_action( 'pmpro_after_checkout', array( $this->integrations, 'handle_pmpro_checkout' ), 10, 2 );
-        add_action( 'pmpro_after_change_membership_level', array( $this->integrations, 'sync_membership_to_woo' ), 10, 3 );
-        
-        // Hooks de WooCommerce → PMPro
-        add_action( 'woocommerce_subscription_status_changed', array( $this->integrations, 'handle_subscription_status_change' ), 10, 3 );
-        add_action( 'woocommerce_order_status_changed', array( $this->integrations, 'handle_order_status_change' ), 10, 4 );
-        
-        // Hook específico para cancelaciones desde PMPro
-        add_action( 'pmpro_before_change_membership_level', array( $this->integrations, 'store_previous_level' ), 5, 3 );
-        add_action( 'pmpro_after_change_membership_level', array( $this->integrations, 'handle_pmpro_cancellation_from_pmpro' ), 10, 3 );
-        
-        // Hooks adicionales para sincronización completa
-        add_action( 'woocommerce_subscription_payment_complete', array( $this->integrations, 'handle_subscription_payment_complete' ), 10, 1 );
-        add_action( 'woocommerce_subscription_payment_failed', array( $this->integrations, 'handle_subscription_payment_failed' ), 10, 1 );
+    private function init_hooks() {
+        add_action( 'init', array( $this, 'init' ), 0 );
+        add_action( 'plugins_loaded', array( $this, 'init_integrations' ), 20 );
     }
 
     /**
-     * Inicia la ejecución del plugin.
-     *
-     * @since 1.0.0
+     * Inicialización principal del plugin
      */
-    public function run() {
-        // Verificar que PMPro y WooCommerce estén activos
-        if ( ! $this->check_plugin_dependencies() ) {
+    public function init() {
+        // Cargar traducciones
+        $this->load_textdomain();
+        
+        // Verificar dependencias
+        if ( ! $this->check_dependencies() ) {
             return;
         }
-        
-        // Log de ejecución iniciada
-        $this->logger->log( 'info', 'Plugin PMPRO-Woo-Sync ejecutándose.' );
-    }
 
-    /**
-     * Verifica que los plugins dependientes estén activos.
-     *
-     * @return bool
-     */
-    private function check_plugin_dependencies() {
-        $dependencies = array(
-            'pmpro' => function_exists( 'pmpro_getLevel' ),
-            'woocommerce' => class_exists( 'WooCommerce' ),
-        );
-        
-        foreach ( $dependencies as $plugin => $check ) {
-            if ( ! $check ) {
-                $this->logger->log( 'error', "Dependencia faltante: {$plugin}" );
-                return false;
-            }
+        // Inicializar configuraciones
+        if ( class_exists( 'PMPro_Woo_Sync_Settings' ) ) {
+            new PMPro_Woo_Sync_Settings();
         }
-        
-        return true;
-    }
 
-    /**
-     * Muestra avisos de administración si es necesario.
-     */
-    public function show_admin_notices() {
-        // Verificar si hay errores críticos que mostrar
-        if ( ! $this->check_plugin_dependencies() ) {
-            echo '<div class="notice notice-error"><p>';
-            _e( 'PMPRO-WooCommerce Sync: Faltan dependencias críticas. Verifique que PMPro y WooCommerce estén activos.', 'pmpro-woo-sync' );
-            echo '</p></div>';
+        // Inicializar admin si estamos en el backend
+        if ( is_admin() && class_exists( 'PMPro_Woo_Sync_Admin' ) ) {
+            new PMPro_Woo_Sync_Admin();
         }
     }
 
     /**
-     * Carga el dominio de texto del plugin para la internacionalización.
-     *
-     * @since 1.0.0
+     * Ejecutar el plugin
+     */
+    public function run() {
+        // El plugin se ejecuta automáticamente a través de los hooks
+        do_action( 'pmpro_woo_sync_loaded' );
+    }
+
+    /**
+     * Inicializar integraciones con WooCommerce
+     */
+    public function init_integrations() {
+        // Verificar que WooCommerce esté activo
+        if ( ! $this->is_woocommerce_active() ) {
+            return;
+        }
+
+        // Inicializar la clase de integraciones
+        if ( class_exists( 'PMPro_Woo_Sync_Integrations' ) ) {
+            $integrations = new PMPro_Woo_Sync_Integrations();
+            $integrations->register_hooks();
+        }
+    }
+
+    /**
+     * Cargar traducciones
      */
     public function load_textdomain() {
         load_plugin_textdomain(
@@ -177,81 +123,133 @@ class PMPro_Woo_Sync {
     }
 
     /**
-     * Método de activación del plugin.
-     * Se ejecuta una sola vez cuando el plugin es activado.
+     * Verificar dependencias críticas
      *
-     * @since 1.0.0
+     * @return bool
+     */
+    private function check_dependencies() {
+        $dependencies_met = true;
+
+        // Verificar Paid Memberships Pro
+        if ( ! function_exists( 'pmpro_getLevel' ) ) {
+            add_action( 'admin_notices', array( $this, 'pmpro_missing_notice' ) );
+            $dependencies_met = false;
+        }
+
+        // Verificar WooCommerce
+        if ( ! $this->is_woocommerce_active() ) {
+            add_action( 'admin_notices', array( $this, 'woocommerce_missing_notice' ) );
+            $dependencies_met = false;
+        }
+
+        return $dependencies_met;
+    }
+
+    /**
+     * Verificar si WooCommerce está activo
+     *
+     * @return bool
+     */
+    private function is_woocommerce_active() {
+        return class_exists( 'WooCommerce' );
+    }
+
+    /**
+     * Aviso de PMPro faltante
+     */
+    public function pmpro_missing_notice() {
+        echo '<div class="notice notice-error"><p>';
+        printf(
+            __( '<strong>PMPro-Woo-Sync:</strong> Requiere que %s esté instalado y activo.', 'pmpro-woo-sync' ),
+            '<a href="https://wordpress.org/plugins/paid-memberships-pro/" target="_blank">Paid Memberships Pro</a>'
+        );
+        echo '</p></div>';
+    }
+
+    /**
+     * Aviso de WooCommerce faltante
+     */
+    public function woocommerce_missing_notice() {
+        echo '<div class="notice notice-error"><p>';
+        printf(
+            __( '<strong>PMPro-Woo-Sync:</strong> Requiere que %s esté instalado y activo.', 'pmpro-woo-sync' ),
+            '<a href="https://wordpress.org/plugins/woocommerce/" target="_blank">WooCommerce</a>'
+        );
+        echo '</p></div>';
+    }
+
+    /**
+     * Hook de activación del plugin
      */
     public static function activate() {
-        global $wpdb;
-
-        // Crear tabla para logs si no existe.
-        $table_name = $wpdb->prefix . 'pmpro_woo_sync_logs';
-        $charset_collate = $wpdb->get_charset_collate();
-
-        // SQL para crear la tabla de logs con índices optimizados.
-        $sql = "CREATE TABLE $table_name (
-            id bigint(20) NOT NULL AUTO_INCREMENT,
-            timestamp datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            level varchar(20) NOT NULL,
-            message text NOT NULL,
-            context longtext NULL,
-            PRIMARY KEY (id),
-            INDEX idx_timestamp (timestamp),
-            INDEX idx_level (level),
-            INDEX idx_timestamp_level (timestamp, level)
-        ) $charset_collate;";
-
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-        dbDelta( $sql );
-
-        // Establecer opciones por defecto más completas.
-        $default_settings = array(
-            'enable_sync' => 'yes',
-            'debug_mode' => 'no',
-            'log_retention_days' => 30,
-            'retry_attempts' => 3,
-            'retry_delay' => 300, // 5 minutos
-            'webhook_enabled' => 'no',
-            'batch_size' => 50,
-            'api_timeout' => 30,
-            'enable_logging' => 'yes',
-        );
+        // Crear tablas si es necesario
+        self::create_tables();
         
-        // Solo agregar si no existe para no sobrescribir configuraciones existentes
-        if ( ! get_option( 'pmpro_woo_sync_settings' ) ) {
-            add_option( 'pmpro_woo_sync_settings', $default_settings );
-        }
+        // Configuraciones por defecto
+        self::set_default_options();
         
-        // Crear directorio de logs si no existe
-        $log_dir = PMPRO_WOO_SYNC_PATH . 'logs/';
-        if ( ! file_exists( $log_dir ) ) {
-            wp_mkdir_p( $log_dir );
-            // Crear archivo .htaccess para proteger los logs
-            file_put_contents( $log_dir . '.htaccess', "Deny from all\n" );
-        }
+        // Limpiar cache
+        flush_rewrite_rules();
         
-        // Programar limpieza de logs
-        if ( ! wp_next_scheduled( 'pmpro_woo_sync_cleanup_logs' ) ) {
-            wp_schedule_event( time(), 'daily', 'pmpro_woo_sync_cleanup_logs' );
+        // Log de activación
+        if ( class_exists( 'PMPro_Woo_Sync_Logger' ) ) {
+            PMPro_Woo_Sync_Logger::log( 'Plugin activado correctamente', 'info' );
         }
     }
 
     /**
-     * Método de desactivación del plugin.
-     * Se ejecuta cuando el plugin es desactivado.
-     *
-     * @since 1.0.0
+     * Hook de desactivación del plugin
      */
     public static function deactivate() {
-        // Desprogramar eventos cron
-        wp_clear_scheduled_hook( 'pmpro_woo_sync_cleanup_logs' );
-        wp_clear_scheduled_hook( 'pmpro_woo_sync_retry_failed_operations' );
+        // Limpiar cache
+        flush_rewrite_rules();
         
-        // Log de desactivación (si el logger está disponible)
+        // Log de desactivación
         if ( class_exists( 'PMPro_Woo_Sync_Logger' ) ) {
-            $logger = new PMPro_Woo_Sync_Logger();
-            $logger->log( 'info', 'Plugin PMPRO-Woo-Sync desactivado.' );
+            PMPro_Woo_Sync_Logger::log( 'Plugin desactivado', 'info' );
         }
+    }
+
+    /**
+     * Crear tablas necesarias
+     */
+    private static function create_tables() {
+        // Implementar si necesitas tablas personalizadas
+        // Por ahora, el plugin usa las tablas estándar de WordPress
+    }
+
+    /**
+     * Establecer opciones por defecto
+     */
+    private static function set_default_options() {
+        $default_settings = array(
+            'enable_sync' => 1,
+            'debug_mode' => 0,
+            'log_retention_days' => 30,
+        );
+
+        add_option( 'pmpro_woo_sync_settings', $default_settings );
+        add_option( 'pmpro_woo_sync_version', PMPRO_WOO_SYNC_VERSION );
+    }
+
+    /**
+     * Obtener configuración del plugin
+     *
+     * @param string $key Clave de configuración
+     * @param mixed $default Valor por defecto
+     * @return mixed
+     */
+    public function get_setting( $key, $default = null ) {
+        $settings = get_option( 'pmpro_woo_sync_settings', array() );
+        return isset( $settings[ $key ] ) ? $settings[ $key ] : $default;
+    }
+
+    /**
+     * Verificar si la sincronización está habilitada
+     *
+     * @return bool
+     */
+    public function is_sync_enabled() {
+        return (bool) $this->get_setting( 'enable_sync', true );
     }
 }

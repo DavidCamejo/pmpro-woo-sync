@@ -1,212 +1,155 @@
 <?php
 /**
- * Plantilla para la página de logs del plugin PMPro-Woo-Sync.
- * Variables disponibles: $logs, $total_logs, $logs_per_page, $current_page, $total_pages, $filter_level, $search_query, $log_stats
+ * Plantilla para mostrar los logs del plugin PMPro-Woo-Sync
+ *
+ * @package PMPro_Woo_Sync
+ * @since 2.0.0
  */
 
 // Prevenir acceso directo
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
+
+// Obtener logs y configuración de paginación
+$logs         = $this->logger->get_logs();
+$log_levels   = $this->logger->get_log_levels();
+$current_page = max( 1, intval( $_GET['paged'] ?? 1 ) );
+$per_page     = 50;
+$total_logs   = count( $logs );
+$total_pages  = max( 1, ceil( $total_logs / $per_page ) );
+$logs_page    = array_slice( $logs, ($current_page - 1) * $per_page, $per_page );
 ?>
 
-<div class="wrap">
-    <h1><?php esc_html_e( 'Logs del Sistema - PMPro-Woo-Sync', 'pmpro-woo-sync' ); ?></h1>
+<div class="wrap pmpro-woo-sync-admin">
+    <h1><?php esc_html_e( 'Logs de Sincronización', 'pmpro-woo-sync' ); ?></h1>
 
-    <div id="pmpro-woo-sync-admin-notices"></div>
+    <p class="description">
+        <?php esc_html_e( 'Aquí puedes revisar la actividad reciente de sincronización entre PMPro y WooCommerce. Usa los filtros para buscar por nivel o palabra clave.', 'pmpro-woo-sync' ); ?>
+    </p>
 
-    <!-- Estadísticas de Logs -->
-    <div class="pmpro-woo-sync-stats-container">
-        <div class="pmpro-woo-sync-stat-box">
-            <h3><?php echo esc_html( number_format_i18n( $log_stats['total'] ?? 0 ) ); ?></h3>
-            <p><?php esc_html_e( 'Total de Logs', 'pmpro-woo-sync' ); ?></p>
-        </div>
-        
-        <div class="pmpro-woo-sync-stat-box">
-            <h3><?php echo esc_html( number_format_i18n( $log_stats['last_24h'] ?? 0 ) ); ?></h3>
-            <p><?php esc_html_e( 'Últimas 24h', 'pmpro-woo-sync' ); ?></p>
-        </div>
-        
-        <div class="pmpro-woo-sync-stat-box error-stat">
-            <h3><?php echo esc_html( number_format_i18n( $log_stats['by_level']['error'] ?? 0 ) ); ?></h3>
-            <p><?php esc_html_e( 'Errores', 'pmpro-woo-sync' ); ?></p>
-        </div>
-        
-        <div class="pmpro-woo-sync-stat-box warning-stat">
-            <h3><?php echo esc_html( number_format_i18n( $log_stats['by_level']['warning'] ?? 0 ) ); ?></h3>
-            <p><?php esc_html_e( 'Advertencias', 'pmpro-woo-sync' ); ?></p>
-        </div>
-    </div>
+    <form method="get" class="pmpro-woo-sync-logs-filter">
+        <input type="hidden" name="page" value="pmpro-woo-sync-logs" />
+        <input type="text" name="s" value="<?php echo esc_attr( $_GET['s'] ?? '' ); ?>" placeholder="<?php esc_attr_e( 'Buscar en logs...', 'pmpro-woo-sync' ); ?>" />
+        <select name="level">
+            <option value=""><?php esc_html_e( 'Todos los niveles', 'pmpro-woo-sync' ); ?></option>
+            <?php foreach ( $log_levels as $level_key => $level_label ) : ?>
+                <option value="<?php echo esc_attr( $level_key ); ?>" <?php selected( $_GET['level'] ?? '', $level_key ); ?>>
+                    <?php echo esc_html( $level_label ); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <button type="submit" class="button"><?php esc_html_e( 'Filtrar', 'pmpro-woo-sync' ); ?></button>
+    </form>
 
-    <!-- Controles y Filtros -->
-    <div class="pmpro-woo-sync-logs-controls">
-        <div class="pmpro-woo-sync-filters">
-            <form method="get" id="logs-filter-form">
-                <input type="hidden" name="page" value="pmpro-woo-sync-logs">
-                
-                <select name="log_level_filter" id="log-level-filter">
-                    <option value=""><?php esc_html_e( 'Todos los niveles', 'pmpro-woo-sync' ); ?></option>
-                    <option value="info" <?php selected( $filter_level, 'info' ); ?>><?php esc_html_e( 'Info', 'pmpro-woo-sync' ); ?></option>
-                    <option value="success" <?php selected( $filter_level, 'success' ); ?>><?php esc_html_e( 'Success', 'pmpro-woo-sync' ); ?></option>
-                    <option value="warning" <?php selected( $filter_level, 'warning' ); ?>><?php esc_html_e( 'Advertencia', 'pmpro-woo-sync' ); ?></option>
-                    <option value="error" <?php selected( $filter_level, 'error' ); ?>><?php esc_html_e( 'Error', 'pmpro-woo-sync' ); ?></option>
-                    <option value="debug" <?php selected( $filter_level, 'debug' ); ?>><?php esc_html_e( 'Debug', 'pmpro-woo-sync' ); ?></option>
-                </select>
-                
-                <input type="search" name="search" value="<?php echo esc_attr( $search_query ); ?>" placeholder="<?php esc_attr_e( 'Buscar en mensajes...', 'pmpro-woo-sync' ); ?>" id="log-search">
-                
-                <button type="submit" class="button"><?php esc_html_e( 'Filtrar', 'pmpro-woo-sync' ); ?></button>
-                
-                <?php if ( ! empty( $filter_level ) || ! empty( $search_query ) ) : ?>
-                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=pmpro-woo-sync-logs' ) ); ?>" class="button">
-                        <?php esc_html_e( 'Limpiar Filtros', 'pmpro-woo-sync' ); ?>
-                    </a>
-                <?php endif; ?>
-            </form>
-        </div>
+    <table class="wp-list-table widefat fixed striped pmpro-woo-sync-logs-table">
+        <thead>
+            <tr>
+                <th><?php esc_html_e( 'Fecha', 'pmpro-woo-sync' ); ?></th>
+                <th><?php esc_html_e( 'Nivel', 'pmpro-woo-sync' ); ?></th>
+                <th><?php esc_html_e( 'Mensaje', 'pmpro-woo-sync' ); ?></th>
+                <th><?php esc_html_e( 'Contexto', 'pmpro-woo-sync' ); ?></th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php
+            if ( empty( $logs_page ) ) :
+                ?>
+                <tr>
+                    <td colspan="4"><?php esc_html_e( 'No se encontraron logs para los filtros seleccionados.', 'pmpro-woo-sync' ); ?></td>
+                </tr>
+                <?php
+            else :
+                foreach ( $logs_page as $log ) {
+                    include __DIR__ . '/log-row.php';
+                }
+            endif;
+            ?>
+        </tbody>
+    </table>
 
-        <div class="pmpro-woo-sync-actions">
-            <button type="button" id="refresh-logs" class="button">
-                <span class="dashicons dashicons-update"></span>
-                <?php esc_html_e( 'Refrescar', 'pmpro-woo-sync' ); ?>
-            </button>
-            
-            <button type="button" id="export-logs" class="button">
-                <span class="dashicons dashicons-download"></span>
-                <?php esc_html_e( 'Exportar', 'pmpro-woo-sync' ); ?>
-            </button>
-            
-            <button type="button" id="clear-logs" class="button button-secondary">
-                <span class="dashicons dashicons-trash"></span>
-                <?php esc_html_e( 'Limpiar Logs', 'pmpro-woo-sync' ); ?>
-            </button>
-        </div>
-    </div>
-
-    <!-- Tabla de Logs -->
-    <div class="pmpro-woo-sync-logs-table-container">
-        <?php if ( empty( $logs ) ) : ?>
-            <div class="pmpro-woo-sync-no-logs">
-                <div class="dashicons dashicons-admin-page"></div>
-                <h3><?php esc_html_e( 'No hay logs disponibles', 'pmpro-woo-sync' ); ?></h3>
-                <p><?php esc_html_e( 'Los logs aparecerán aquí cuando el plugin realice operaciones.', 'pmpro-woo-sync' ); ?></p>
-            </div>
-        <?php else : ?>
-            <table class="wp-list-table widefat fixed striped" id="logs-table">
-                <thead>
-                    <tr>
-                        <th scope="col" class="column-timestamp"><?php esc_html_e( 'Fecha/Hora', 'pmpro-woo-sync' ); ?></th>
-                        <th scope="col" class="column-level"><?php esc_html_e( 'Nivel', 'pmpro-woo-sync' ); ?></th>
-                        <th scope="col" class="column-message"><?php esc_html_e( 'Mensaje', 'pmpro-woo-sync' ); ?></th>
-                        <th scope="col" class="column-actions"><?php esc_html_e( 'Acciones', 'pmpro-woo-sync' ); ?></th>
-                    </tr>
-                </thead>
-                <tbody id="logs-table-body">
-                    <?php foreach ( $logs as $log_entry ) : ?>
-                        <?php include PMPRO_WOO_SYNC_PATH . 'admin/partials/log-row.php'; ?>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-
-            <!-- Paginación -->
-            <?php if ( $total_pages > 1 ) : ?>
-                <div class="tablenav bottom">
-                    <div class="tablenav-pages">
-                        <?php
-                        $page_links = paginate_links( array(
-                            'base'      => add_query_arg( 'paged', '%#%' ),
-                            'format'    => '',
-                            'add_args'  => array(
-                                'log_level_filter' => $filter_level,
-                                'search' => $search_query,
-                            ),
-                            'prev_text' => '&laquo;',
-                            'next_text' => '&raquo;',
-                            'total'     => $total_pages,
-                            'current'   => $current_page,
-                        ));
-                        
-                        if ( $page_links ) {
-                            echo '<span class="displaying-num">' . sprintf( 
-                                _n( '%s log', '%s logs', $total_logs, 'pmpro-woo-sync' ), 
-                                number_format_i18n( $total_logs ) 
-                            ) . '</span>';
-                            echo $page_links;
-                        }
-                        ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-        <?php endif; ?>
-    </div>
-
-    <!-- Herramientas Adicionales -->
-    <div class="pmpro-woo-sync-logs-tools">
-        <h3><?php esc_html_e( 'Herramientas de Logs', 'pmpro-woo-sync' ); ?></h3>
-        
-        <form method="post" class="pmpro-woo-sync-inline-form">
-            <?php wp_nonce_field( 'pmpro_woo_sync_logs_action' ); ?>
-            <input type="hidden" name="pmpro_woo_sync_logs_action" value="cleanup_old_logs">
-            <button type="submit" class="button">
-                <span class="dashicons dashicons-calendar-alt"></span>
-                <?php esc_html_e( 'Limpiar Logs Antiguos', 'pmpro-woo-sync' ); ?>
-            </button>
-            <span class="description">
-                <?php 
-                printf( 
-                    esc_html__( 'Elimina logs más antiguos que %d días según configuración.', 'pmpro-woo-sync' ),
-                    $this->settings->get_setting( 'log_retention_days', 30 )
+    <?php if ( $total_pages > 1 ) : ?>
+        <div class="tablenav-pages">
+            <span class="displaying-num">
+                <?php
+                printf(
+                    /* translators: 1: total logs, 2: current page, 3: total pages */
+                    esc_html__( '%1$s registros. Página %2$s de %3$s', 'pmpro-woo-sync' ),
+                    number_format_i18n( $total_logs ),
+                    number_format_i18n( $current_page ),
+                    number_format_i18n( $total_pages )
                 );
                 ?>
             </span>
-        </form>
-    </div>
+            <span class="pagination-links">
+                <?php if ( $current_page > 1 ) : ?>
+                    <a class="first-page button" href="<?php echo esc_url( add_query_arg( 'paged', 1 ) ); ?>">&laquo;</a>
+                    <a class="prev-page button" href="<?php echo esc_url( add_query_arg( 'paged', $current_page - 1 ) ); ?>">&lsaquo;</a>
+                <?php endif; ?>
+                <span class="paging-input">
+                    <input class="current-page" type="text" name="paged" value="<?php echo esc_attr( $current_page ); ?>" size="2" />
+                    <?php esc_html_e( 'de', 'pmpro-woo-sync' ); ?> <span class="total-pages"><?php echo esc_html( $total_pages ); ?></span>
+                </span>
+                <?php if ( $current_page < $total_pages ) : ?>
+                    <a class="next-page button" href="<?php echo esc_url( add_query_arg( 'paged', $current_page + 1 ) ); ?>">&rsaquo;</a>
+                    <a class="last-page button" href="<?php echo esc_url( add_query_arg( 'paged', $total_pages ) ); ?>">&raquo;</a>
+                <?php endif; ?>
+            </span>
+        </div>
+    <?php endif; ?>
 </div>
 
-<!-- Modal de Detalles del Log -->
-<div id="log-details-modal" style="display: none;">
-    <div class="log-details-content">
-        <h3><?php esc_html_e( 'Detalles del Log', 'pmpro-woo-sync' ); ?></h3>
-        <div id="log-details-body"></div>
-    </div>
-</div>
-
-<script>
-jQuery(document).ready(function($) {
-    // Auto-filtrado en tiempo real
-    $('#log-level-filter, #log-search').on('change keyup', function() {
-        if ($(this).is('#log-search')) {
-            clearTimeout(window.searchTimeout);
-            window.searchTimeout = setTimeout(function() {
-                $('#logs-filter-form').submit();
-            }, 500);
-        } else {
-            $('#logs-filter-form').submit();
-        }
-    });
-
-    // Modal de detalles
-    $('.view-log-details').on('click', function(e) {
-        e.preventDefault();
-        var context = $(this).data('context');
-        var message = $(this).data('message');
-        var timestamp = $(this).data('timestamp');
-        
-        var modalContent = '<div class="log-detail-item"><strong><?php esc_js( __( 'Mensaje:', 'pmpro-woo-sync' ) ); ?></strong><br>' + message + '</div>';
-        modalContent += '<div class="log-detail-item"><strong><?php esc_js( __( 'Fecha:', 'pmpro-woo-sync' ) ); ?></strong><br>' + timestamp + '</div>';
-        
-        if (context && context !== 'null' && context !== '[]') {
-            modalContent += '<div class="log-detail-item"><strong><?php esc_js( __( 'Contexto:', 'pmpro-woo-sync' ) ); ?></strong><br><pre>' + context + '</pre></div>';
-        }
-        
-        $('#log-details-body').html(modalContent);
-        $('#log-details-modal').dialog({
-            modal: true,
-            width: 600,
-            height: 400,
-            resizable: true,
-            title: '<?php esc_js( __( 'Detalles del Log', 'pmpro-woo-sync' ) ); ?>'
-        });
-    });
-});
-</script>
+<style>
+.pmpro-woo-sync-logs-filter {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.pmpro-woo-sync-logs-table th,
+.pmpro-woo-sync-logs-table td {
+    vertical-align: top;
+    font-size: 14px;
+}
+.pmpro-woo-sync-logs-table .log-level {
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+.pmpro-woo-sync-logs-table .log-level.error { background: #f8d7da; color: #721c24; }
+.pmpro-woo-sync-logs-table .log-level.warning { background: #fff3cd; color: #856404; }
+.pmpro-woo-sync-logs-table .log-level.info { background: #d1ecf1; color: #0c5460; }
+.pmpro-woo-sync-logs-table .log-level.debug { background: #e2e3e5; color: #383d41; }
+.pmpro-woo-sync-logs-table pre {
+    margin: 0;
+    font-size: 12px;
+    background: #f8f9fa;
+    border-radius: 3px;
+    padding: 5px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+.tablenav-pages {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.tablenav-pages .pagination-links a.button {
+    min-width: 28px;
+    text-align: center;
+    padding: 2px 6px;
+}
+.tablenav-pages .paging-input {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.tablenav-pages .current-page {
+    width: 40px;
+    text-align: center;
+}
+</style>
