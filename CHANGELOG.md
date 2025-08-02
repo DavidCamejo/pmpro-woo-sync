@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.0.0] - 2024-08-01
+## [2.0.0] - 2025-08-01
 
 ### 🚀 Refactorización mayor y simplificación de arquitectura
 
@@ -60,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.0.0] - 2024-07-30
+## [1.0.0] - 2025-07-30
 
 ### Added
 
