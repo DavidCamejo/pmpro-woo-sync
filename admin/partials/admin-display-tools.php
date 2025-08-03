@@ -19,6 +19,10 @@ $sync_stats = $this->get_sync_statistics();
 <div class="wrap pmpro-woo-sync-admin">
     <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
+    <p class="description">
+        <?php esc_html_e( 'Utiliza estas herramientas para gestionar y mantener la sincronización entre PMPro y WooCommerce. Los pagos recurrentes se gestionan automáticamente a través de PagBank-WooCommerce.', 'pmpro-woo-sync' ); ?>
+    </p>
+
     <!-- Resumen del estado actual -->
     <div class="pmpro-woo-sync-tools-summary">
         <div class="summary-grid">
@@ -27,8 +31,8 @@ $sync_stats = $this->get_sync_statistics();
                 <span class="summary-label"><?php esc_html_e( 'Usuarios Sincronizados', 'pmpro-woo-sync' ); ?></span>
             </div>
             <div class="summary-item">
-                <span class="summary-number"><?php echo esc_html( $sync_stats['active_subscriptions'] ); ?></span>
-                <span class="summary-label"><?php esc_html_e( 'Suscripciones Activas', 'pmpro-woo-sync' ); ?></span>
+                <span class="summary-number"><?php echo esc_html( $sync_stats['active_orders'] ); ?></span>
+                <span class="summary-label"><?php esc_html_e( 'Pedidos Activos', 'pmpro-woo-sync' ); ?></span>
             </div>
             <div class="summary-item">
                 <span class="summary-number"><?php echo esc_html( $sync_stats['sync_errors'] ); ?></span>
@@ -90,15 +94,15 @@ $sync_stats = $this->get_sync_statistics();
 
             <div class="tool-item">
                 <div class="tool-header">
-                    <h3><?php esc_html_e( 'Reparar Enlaces de Suscripciones', 'pmpro-woo-sync' ); ?></h3>
+                    <h3><?php esc_html_e( 'Reparar Enlaces de Productos', 'pmpro-woo-sync' ); ?></h3>
                     <span class="tool-badge safe"><?php esc_html_e( 'Seguro', 'pmpro-woo-sync' ); ?></span>
                 </div>
                 <p class="tool-description">
-                    <?php esc_html_e( 'Repara las vinculaciones rotas entre suscripciones de WooCommerce y niveles de membresía de PMPro.', 'pmpro-woo-sync' ); ?>
+                    <?php esc_html_e( 'Repara las vinculaciones rotas entre productos de WooCommerce y niveles de membresía de PMPro.', 'pmpro-woo-sync' ); ?>
                 </p>
                 <form method="post" action="" class="tool-form">
                     <?php wp_nonce_field( 'pmpro_woo_sync_tools_action', '_wpnonce' ); ?>
-                    <input type="hidden" name="pmpro_woo_sync_tools_action" value="repair_subscription_links" />
+                    <input type="hidden" name="pmpro_woo_sync_tools_action" value="repair_product_links" />
                     <div class="form-row">
                         <button type="submit" class="button button-primary">
                             <span class="dashicons dashicons-admin-links"></span>
@@ -110,15 +114,15 @@ $sync_stats = $this->get_sync_statistics();
 
             <div class="tool-item">
                 <div class="tool-header">
-                    <h3><?php esc_html_e( 'Verificar Estados de Suscripciones', 'pmpro-woo-sync' ); ?></h3>
+                    <h3><?php esc_html_e( 'Verificar Estados de Membresías', 'pmpro-woo-sync' ); ?></h3>
                     <span class="tool-badge safe"><?php esc_html_e( 'Seguro', 'pmpro-woo-sync' ); ?></span>
                 </div>
                 <p class="tool-description">
-                    <?php esc_html_e( 'Verifica y actualiza el estado de todas las suscripciones sincronizadas entre PMPro y WooCommerce.', 'pmpro-woo-sync' ); ?>
+                    <?php esc_html_e( 'Verifica y actualiza el estado de todas las membresías sincronizadas entre PMPro y WooCommerce.', 'pmpro-woo-sync' ); ?>
                 </p>
                 <form method="post" action="" class="tool-form">
                     <?php wp_nonce_field( 'pmpro_woo_sync_tools_action', '_wpnonce' ); ?>
-                    <input type="hidden" name="pmpro_woo_sync_tools_action" value="verify_subscription_states" />
+                    <input type="hidden" name="pmpro_woo_sync_tools_action" value="verify_membership_states" />
                     <div class="form-row">
                         <button type="submit" class="button button-primary">
                             <span class="dashicons dashicons-yes-alt"></span>
@@ -208,7 +212,7 @@ $sync_stats = $this->get_sync_statistics();
                     <span class="tool-badge safe"><?php esc_html_e( 'Seguro', 'pmpro-woo-sync' ); ?></span>
                 </div>
                 <p class="tool-description">
-                    <?php esc_html_e( 'Obtiene información detallada de debug para un usuario específico, incluyendo su estado de membresía y suscripciones.', 'pmpro-woo-sync' ); ?>
+                    <?php esc_html_e( 'Obtiene información detallada de debug para un usuario específico, incluyendo su estado de membresía y pedidos.', 'pmpro-woo-sync' ); ?>
                 </p>
                 <form method="post" action="" class="tool-form">
                     <?php wp_nonce_field( 'pmpro_woo_sync_tools_action', '_wpnonce' ); ?>
@@ -248,16 +252,16 @@ $sync_stats = $this->get_sync_statistics();
 
     <!-- Resultados de Debug -->
     <?php if ( isset( $_POST['debug_user_id'] ) && wp_verify_nonce( $_POST['_wpnonce'], 'pmpro_woo_sync_tools_action' ) ) : ?>
-        <div class="pmpro-woo-sync-debug-results">
-            <h2><?php esc_html_e( 'Resultados del Debug:', 'pmpro-woo-sync' ); ?></h2>
-            <div class="debug-output">
-                <pre><?php 
-                    $user_id = intval( $_POST['debug_user_id'] );
-                    $debug_info = $this->get_user_debug_info( $user_id );
-                    echo esc_html( wp_json_encode( $debug_info, JSON_PRETTY_PRINT ) );
-                ?></pre>
-            </div>
+    <div class="pmpro-woo-sync-debug-results">
+        <h2><?php esc_html_e( 'Resultados del Debug:', 'pmpro-woo-sync' ); ?></h2>
+        <div class="debug-output">
+            <pre><?php 
+            $user_id = intval( $_POST['debug_user_id'] );
+            $debug_info = $this->get_user_debug_info( $user_id );
+            echo esc_html( wp_json_encode( $debug_info, JSON_PRETTY_PRINT ) );
+            ?></pre>
         </div>
+    </div>
     <?php endif; ?>
 </div>
 

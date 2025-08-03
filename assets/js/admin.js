@@ -99,10 +99,322 @@
         });
     };
 
+    pmproWooSync.clearLogs = function(e) {/**
+ * Scripts para el área de administración del plugin PMPro-WooCommerce Sync.
+ * Enfocado en la integración con WooCommerce y PagBank para pagos recurrentes.
+ */
+
+(function($) {
+    'use strict';
+
+    // Variables globales
+    var pmproWooSync = {
+        ajaxRunning: false,
+        refreshInterval: null,
+        searchTimeout: null,
+        draftTimeout: null,
+        debugMode: false
+    };
+
+    $(document).ready(function() {
+        pmproWooSync.init();
+    });
+
+    pmproWooSync.init = function() {
+        this.bindEvents();
+        this.initTooltips();
+        this.initAutoRefresh();
+        this.initModals();
+        this.checkSystemStatus();
+        
+        // Habilitar modo debug si está configurado
+        this.debugMode = $('#debug-mode').is(':checked');
+        
+        console.log('PMPro-Woo Sync Admin scripts loaded and initialized.');
+    };
+
+    pmproWooSync.bindEvents = function() {
+        // Test de conexión PagBank
+        $('#test-pagbank-connection').on('click', this.testPagBankConnection);
+        
+        // Test de sincronización general
+        $('#test-sync-connection').on('click', this.testSyncConnection);
+        
+        // Limpiar logs
+        $('#clear-logs').on('click', this.clearLogs);
+        
+        // Exportar logs
+        $('#export-logs').on('click', this.exportLogs);
+        
+        // Refrescar logs
+        $('#refresh-logs').on('click', this.refreshLogs);
+        
+        // Toggle de mensajes largos
+        $(document).on('click', '.toggle-full-message', this.toggleFullMessage);
+        
+        // Auto-submit en filtros de logs
+        $('#log-level-filter').on('change', this.autoSubmitFilters);
+        $('#log-search').on('input', this.debounceSearch);
+        
+        // Validación de formulario de configuraciones
+        $('#pmpro-woo-sync-settings-form').on('submit', this.validateSettingsForm);
+        
+        // Modal de detalles de logs
+        $(document).on('click', '.view-log-details', this.showLogDetails);
+        
+        // Botones de herramientas
+        $('.pmpro-woo-sync-tool-button').on('click', this.handleToolAction);
+        
+        // Auto-guardar borrador de configuraciones
+        $('#pmpro-woo-sync-settings-form input, #pmpro-woo-sync-settings-form select').on('change', this.autoSaveDraft);
+        
+        // Manejo de mapeo de niveles
+        $(document).on('change', 'select[name*="level_mappings"]', this.updateLevelMapping);
+        
+        // Diagnóstico de usuario específico
+        $('#run-diagnostic-test').on('click', this.runDiagnosticTest);
+        
+        // Exportar información del sistema
+        $('#export-system-info').on('click', this.exportSystemInfo);
+    };
+
+    pmproWooSync.testPagBankConnection = function(e) {
+        e.preventDefault();
+        
+        if (pmproWooSync.ajaxRunning) return;
+        
+        var $button = $(this);
+        var originalText = $button.html();
+        
+        $button.html('<span class="dashicons dashicons-update spin"></span> ' + pmproWooSyncAdmin.strings.testing_connection);
+        $button.prop('disabled', true).addClass('loading');
+        pmproWooSync.ajaxRunning = true;
+        
+        $.ajax({
+            url: pmproWooSyncAdmin.ajaxurl,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'pmpro_woo_sync_test_pagbank_connection',
+                nonce: pmproWooSyncAdmin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    pmproWooSync.showNotice(
+                        response.data.message || 'Conexión con PagBank exitosa', 
+                        'success'
+                    );
+                    pmproWooSync.updateConnectionStatus('pagbank', true);
+                    
+                    // Verificar capacidades de pagos recurrentes
+                    if (response.data.recurring_enabled) {
+                        pmproWooSync.showNotice(
+                            'Pagos recurrentes disponibles en PagBank', 
+                            'info'
+                        );
+                    }
+                } else {
+                    pmproWooSync.showNotice(
+                        response.data.message || 'Error en la conexión con PagBank', 
+                        'error'
+                    );
+                    pmproWooSync.updateConnectionStatus('pagbank', false);
+                }
+            },
+            error: function(xhr, status, error) {
+                pmproWooSync.showNotice(
+                    'Error al conectar con PagBank: ' + error, 
+                    'error'
+                );
+                pmproWooSync.updateConnectionStatus('pagbank', false);
+            },
+            complete: function() {
+                $button.html(originalText);
+                $button.prop('disabled', false).removeClass('loading');
+                pmproWooSync.ajaxRunning = false;
+            }
+        });
+    };
+
+    pmproWooSync.testSyncConnection = function(e) {
+        e.preventDefault();
+        
+        if (pmproWooSync.ajaxRunning) return;
+        
+        var $button = $(this);
+        var originalText = $button.html();
+        
+        $button.html('<span class="dashicons dashicons-update spin"></span> Probando...');
+        $button.prop('disabled', true).addClass('loading');
+        pmproWooSync.ajaxRunning = true;
+        
+        $.ajax({
+            url: pmproWooSyncAdmin.ajaxurl,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'pmpro_woo_sync_test_sync',
+                nonce: pmproWooSyncAdmin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    var message = 'Prueba de sincronización exitosa';
+                    if (response.data.details) {
+                        message += ':\n' + response.data.details.join('\n');
+                    }
+                    pmproWooSync.showNotice(message, 'success');
+                } else {
+                    pmproWooSync.showNotice(
+                        response.data.message || 'Error en la prueba de sincronización', 
+                        'error'
+                    );
+                }
+            },
+            error: function(xhr, status, error) {
+                pmproWooSync.showNotice('Error AJAX: ' + error, 'error');
+            },
+            complete: function() {
+                $button.html(originalText);
+                $button.prop('disabled', false).removeClass('loading');
+                pmproWooSync.ajaxRunning = false;
+            }
+        });
+    };
+
+    pmproWooSync.updateLevelMapping = function() {
+        var $select = $(this);
+        var levelId = $select.attr('name').match(/\[(\d+)\]/)[1];
+        var productId = $select.val();
+        var $statusCell = $select.closest('tr').find('.status-badge');
+        
+        if (productId) {
+            $statusCell.removeClass('inactive').addClass('active').text('Mapeado');
+            
+            // Opcional: Validar el mapeo automáticamente
+            if (pmproWooSync.debugMode) {
+                console.log('Nivel ' + levelId + ' mapeado al producto ' + productId);
+            }
+        } else {
+            $statusCell.removeClass('active').addClass('inactive').text('Sin mapear');
+        }
+    };
+
+    pmproWooSync.runDiagnosticTest = function(e) {
+        e.preventDefault();
+        
+        if (pmproWooSync.ajaxRunning) return;
+        
+        var $button = $(this);
+        var originalText = $button.html();
+        
+        $button.html('<span class="dashicons dashicons-update spin"></span> Ejecutando...');
+        $button.prop('disabled', true).addClass('loading');
+        pmproWooSync.ajaxRunning = true;
+        
+        $.ajax({
+            url: pmproWooSyncAdmin.ajaxurl,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'pmpro_woo_sync_diagnostic_test',
+                nonce: pmproWooSyncAdmin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    var diagnosticResults = response.data;
+                    var message = 'Diagnóstico completado:\n';
+                    
+                    // Mostrar resultados clave
+                    if (diagnosticResults.pmpro_status) {
+                        message += '✓ PMPro: ' + diagnosticResults.pmpro_status + '\n';
+                    }
+                    if (diagnosticResults.woocommerce_status) {
+                        message += '✓ WooCommerce: ' + diagnosticResults.woocommerce_status + '\n';
+                    }
+                    if (diagnosticResults.pagbank_status) {
+                        message += '✓ PagBank: ' + diagnosticResults.pagbank_status + '\n';
+                    }
+                    if (diagnosticResults.sync_status) {
+                        message += '✓ Sincronización: ' + diagnosticResults.sync_status + '\n';
+                    }
+                    
+                    pmproWooSync.showNotice(message, 'success');
+                    
+                    // Redirigir a logs para ver detalles completos
+                    setTimeout(function() {
+                        window.location.href = pmproWooSyncAdmin.logs_url;
+                    }, 3000);
+                } else {
+                    pmproWooSync.showNotice(
+                        response.data.message || 'Error en el diagnóstico', 
+                        'error'
+                    );
+                }
+            },
+            error: function(xhr, status, error) {
+                pmproWooSync.showNotice('Error AJAX: ' + error, 'error');
+            },
+            complete: function() {
+                $button.html(originalText);
+                $button.prop('disabled', false).removeClass('loading');
+                pmproWooSync.ajaxRunning = false;
+            }
+        });
+    };
+
+    pmproWooSync.exportSystemInfo = function(e) {
+        e.preventDefault();
+        
+        window.location.href = pmproWooSyncAdmin.ajaxurl + 
+            '?action=pmpro_woo_sync_export_system_info&nonce=' + 
+            pmproWooSyncAdmin.nonce;
+    };
+
+    pmproWooSync.checkSystemStatus = function() {
+        // Verificar periódicamente el estado del sistema
+        setInterval(function() {
+            if (!document.hidden && !pmproWooSync.ajaxRunning) {
+                $.ajax({
+                    url: pmproWooSyncAdmin.ajaxurl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'pmpro_woo_sync_check_status',
+                        nonce: pmproWooSyncAdmin.nonce
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            pmproWooSync.updateSystemIndicators(response.data);
+                        }
+                    },
+                    error: function() {
+                        // Fallar silenciosamente para no interrumpir el flujo
+                    }
+                });
+            }
+        }, 60000); // Cada minuto
+    };
+
+    pmproWooSync.updateSystemIndicators = function(data) {
+        // Actualizar indicadores de estado en tiempo real
+        $('.status-indicator').each(function() {
+            var $indicator = $(this);
+            var component = $indicator.data('component');
+            
+            if (data[component]) {
+                $indicator.removeClass('active inactive warning error')
+                    .addClass(data[component].status)
+                    .find('.label')
+                    .text(data[component].message);
+            }
+        });
+    };
+
+    // Mantener funciones existentes de logs y herramientas...
     pmproWooSync.clearLogs = function(e) {
         e.preventDefault();
         
-        if (!confirm(pmproWooSyncAdmin.strings.confirm_clear_logs)) {
+        if (!confirm('¿Está seguro de que desea limpiar todos los logs? Esta acción no se puede deshacer.')) {
             return;
         }
         
@@ -111,8 +423,8 @@
         var $button = $(this);
         var originalText = $button.html();
         
-        $button.html('<span class="dashicons dashicons-update spin"></span> ' + pmproWooSyncAdmin.strings.processing);
-        $button.prop('disabled', true);
+        $button.html('<span class="dashicons dashicons-update spin"></span> Limpiando...');
+        $button.prop('disabled', true).addClass('loading');
         pmproWooSync.ajaxRunning = true;
         
         $.ajax({
@@ -125,7 +437,7 @@
             },
             success: function(response) {
                 if (response.success) {
-                    pmproWooSync.showNotice(response.data.message, 'success');
+                    pmproWooSync.showNotice('Logs limpiados exitosamente', 'success');
                     // Recargar la página después de un breve delay
                     setTimeout(function() {
                         window.location.reload();
@@ -139,7 +451,7 @@
             },
             complete: function() {
                 $button.html(originalText);
-                $button.prop('disabled', false);
+                $button.prop('disabled', false).removeClass('loading');
                 pmproWooSync.ajaxRunning = false;
             }
         });
@@ -464,6 +776,11 @@
         type = type || 'info';
         timeout = timeout || 5000;
         
+        // Crear contenedor de notices si no existe
+        if ($('#pmpro-woo-sync-admin-notices').length === 0) {
+            $('.wrap').prepend('<div id="pmpro-woo-sync-admin-notices"></div>');
+        }
+        
         var noticeClass = 'notice notice-' + (type === 'success' ? 'success' : type === 'error' ? 'error' : 'info');
         var $notice = $('<div class="' + noticeClass + ' is-dismissible"><p>' + pmproWooSync.escapeHtml(message) + '</p></div>');
         
@@ -491,16 +808,26 @@
     };
 
     pmproWooSync.updateConnectionStatus = function(gateway, status) {
-        var $indicator = $('.indicator').filter(function() {
-            return $(this).text().toLowerCase().indexOf(gateway) > -1;
+        var $indicator = $('.indicator, .status-indicator').filter(function() {
+            return $(this).text().toLowerCase().indexOf(gateway) > -1 || 
+                   $(this).data('component') === gateway;
         });
         
         if ($indicator.length) {
-            $indicator.removeClass('active inactive warning')
-                     .addClass(status ? 'active' : 'inactive')
-                     .find('.dashicons')
-                     .removeClass('dashicons-yes-alt dashicons-dismiss')
+            $indicator.removeClass('active inactive warning error')
+                .addClass(status ? 'active' : 'inactive');
+                
+            var $icon = $indicator.find('.dashicons');
+            if ($icon.length) {
+                $icon.removeClass('dashicons-yes-alt dashicons-dismiss dashicons-warning')
                      .addClass(status ? 'dashicons-yes-alt' : 'dashicons-dismiss');
+            }
+            
+            // Actualizar texto si existe
+            var $label = $indicator.find('.label');
+            if ($label.length) {
+                $label.text(status ? 'Conectado' : 'Desconectado');
+            }
         }
     };
 
@@ -545,11 +872,11 @@
 
     pmproWooSync.escapeHtml = function(unsafe) {
         return unsafe
-             .replace(/&/g, "&amp;")
-             .replace(/</g, "&lt;")
-             .replace(/>/g, "&gt;")
-             .replace(/"/g, "&quot;")
-             .replace(/'/g, "&#039;");
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     };
 
     pmproWooSync.numberFormat = function(num) {
@@ -564,15 +891,23 @@
         if (pmproWooSync.draftTimeout) {
             clearTimeout(pmproWooSync.draftTimeout);
         }
+        if (pmproWooSync.searchTimeout) {
+            clearTimeout(pmproWooSync.searchTimeout);
+        }
     });
 
-    // Agregar estilos CSS dinámicos
+    // Agregar estilos CSS dinámicos específicos para la integración
     $('<style>' +
-        '.spin { animation: spin 1s linear infinite; } ' +
-        '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } ' +
-        '.form-error { border-color: #d63638 !important; box-shadow: 0 0 2px rgba(214, 54, 56, 0.8); } ' +
-        '.fade-in { animation: fadeIn 0.3s ease-in; } ' +
-        '@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }' +
+    '.spin { animation: spin 1s linear infinite; } ' +
+    '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } ' +
+    '.form-error { border-color: #d63638 !important; box-shadow: 0 0 2px rgba(214, 54, 56, 0.8); } ' +
+    '.fade-in { animation: fadeIn 0.3s ease-in; } ' +
+    '@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } } ' +
+    '.pagbank-indicator { background: #e7f3ff; color: #1666ba; padding: 2px 6px; border-radius: 3px; font-size: 11px; } ' +
+    '.recurring-payment-badge { background: #d4edda; color: #155724; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 5px; } ' +
+    '.connection-test-result { margin-top: 10px; padding: 10px; border-radius: 4px; } ' +
+    '.connection-test-result.success { background: #d4edda; color: #155724; } ' +
+    '.connection-test-result.error { background: #f8d7da; color: #721c24; } ' +
     '</style>').appendTo('head');
 
     // Exponer objeto global para uso externo

@@ -1,12 +1,12 @@
 <?php
 /**
  * Plugin Name:    PMPro-Woo-Sync
- * Plugin URI:     https://github.com/DavidCamejo/pmpro-woo-sync
- * Description:    PMPro-Woo-Sync sincroniza automáticamente los estados de suscripciones de WooCommerce con las membresías de Paid Memberships Pro. Compatible con cualquier gateway de pago que use los hooks estándar de WooCommerce.
- * Version:        2.0.0
- * Author:         David Camejo
- * Author URI:     https://github.com/DavidCamejo
- * License:        MIT
+ * Plugin URI:    https://github.com/DavidCamejo/pmpro-woo-sync
+ * Description:    Sincroniza membresías de <strong>Paid Memberships Pro</strong> con pedidos de <strong>WooCommerce</strong> y pagos recurrentes con <strong>PagBank Connect</strong> (Próximamente más gateways).
+ * Version:    2.0.0
+ * Author:    David Camejo
+ * Author URI:    https://github.com/DavidCamejo
+ * License:    MIT
  * License URI:    https://opensource.org/licenses/MIT
  * Text Domain:    pmpro-woo-sync
  * Domain Path:    /languages
@@ -15,7 +15,7 @@
  * Requires PHP:   7.4
  * WC requires at least: 4.0
  * WC tested up to: 8.0
- * Network:        false
+ * Network:    false
  *
  * @package PMPro_Woo_Sync
  * @author David Camejo
@@ -73,11 +73,6 @@ function pmpro_woo_sync_check_dependencies() {
                 'name' => 'WooCommerce',
                 'class' => 'WooCommerce',
                 'required' => true,
-            ),
-            'woocommerce-subscriptions/woocommerce-subscriptions.php' => array(
-                'name' => 'WooCommerce Subscriptions',
-                'class' => 'WC_Subscriptions',
-                'required' => false, // Recomendado pero no crítico
             ),
         ),
         'php_version' => PMPRO_WOO_SYNC_MIN_PHP_VERSION,
@@ -155,11 +150,11 @@ spl_autoload_register( function ( $class_name ) {
     
     // Mapeo directo de clases a archivos para mejor performance
     $class_map = array(
-        'PMPro_Woo_Sync'                    => 'includes/class-pmpro-woo-sync.php',
-        'PMPro_Woo_Sync_Logger'            => 'includes/class-pmpro-woo-sync-logger.php',
-        'PMPro_Woo_Sync_Settings'          => 'includes/class-pmpro-woo-sync-settings.php',
-        'PMPro_Woo_Sync_Integrations'      => 'includes/class-pmpro-woo-sync-integrations.php',
-        'PMPro_Woo_Sync_Admin'             => 'admin/class-pmpro-woo-sync-admin.php',
+        'PMPro_Woo_Sync'           => 'includes/class-pmpro-woo-sync.php',
+        'PMPro_Woo_Sync_Logger'    => 'includes/class-pmpro-woo-sync-logger.php',
+        'PMPro_Woo_Sync_Settings'  => 'includes/class-pmpro-woo-sync-settings.php',
+        'PMPro_Woo_Sync_Integrations' => 'includes/class-pmpro-woo-sync-integrations.php',
+        'PMPro_Woo_Sync_Admin'     => 'admin/class-pmpro-woo-sync-admin.php',
     );
     
     if ( isset( $class_map[ $class_name ] ) ) {

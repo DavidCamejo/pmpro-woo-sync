@@ -2,7 +2,7 @@
 
 ## 🎯 Finalidad
 
-Este plugin permite utilizar gateways de pagos recurrentes de **WooCommeece**, como **PagBank Connect** (Brasil), en **Paid Memberships Pro**. Esto sincroniza automáticamente los pagos recurrentes de WooCommerce con los estados de las suscripciones en Paid Memberships Pro.
+Este plugin permite sincronizar automáticamente las membresías de **Paid Memberships Pro** con los pedidos y pagos recurrentes de **WooCommerce**. Está optimizado para trabajar con **PagBank Connect** para pagos recurrentes en Brasil, pero funciona con cualquier gateway de WooCommerce que maneje pagos recurrentes mediante los hooks estándar.
 
 ### El Problema
 
@@ -10,7 +10,7 @@ Cuando un usuario adquiere una membresía de PMPro a través de WooCommerce:
 
 - El pago inicial se procesa correctamente
 - La membresía se activa en PMPro
-- Los pagos recurrentes se procesan en WooCommerce (creando nuevos pedidos)
+- Los pagos recurrentes se procesan en WooCommerce/PagBank (creando nuevos pedidos)
 - **PERO** PMPro no se actualiza automáticamente con las renovaciones
 
 Esto resulta en:
@@ -22,25 +22,25 @@ Esto resulta en:
 
 ### La Solución
 
-Este plugin mantiene **automáticamente sincronizadas** las membresías de PMPro con el estado real de las suscripciones en WooCommerce.
+Este plugin mantiene **automáticamente sincronizadas** las membresías de PMPro con el estado real de los pedidos y pagos recurrentes en WooCommerce y PagBank.
 
 ---
 
 ## 🔧 Funcionalidades
 
-### ✅ Sincronización Automática
+### ✅ Sincronización Automática con WooCommerce
 
-- **Renovaciones Exitosas**: Extiende automáticamente la membresía en PMPro
-- **Pagos Fallidos**: Implementa sistema de reintentos configurables
-- **Cancelaciones Bidireccionales**: Cancela la membresía en PMPro cuando se cancela en WooCommerce y propaga las cancelaciones desde PMPro a los gateways de pago externos para detener los cobros recurrentes
+- **Pedidos Completados**: Activa o extiende automáticamente la membresía en PMPro
+- **Pedidos Fallidos**: Cancela membresías cuando está configurado para hacerlo
+- **Cancelaciones**: Sincroniza cancelaciones bidireccionales entre PMPro y WooCommerce
 - **Fechas de Expiración**: Calcula y actualiza automáticamente las fechas de renovación
 
-### ✅ Sistema de Reintentos Inteligente
+### ✅ Integración Optimizada con PagBank Connect
 
-- Reintentos automáticos para pagos fallidos
-- Límite configurable de intentos
-- Suspensión automática tras máximos reintentos
-- Limpieza automática de intentos exitosos
+- **Pagos Recurrentes**: Maneja automáticamente los hooks específicos de PagBank
+- **Renovaciones Automáticas**: Extiende membresías cuando PagBank procesa pagos recurrentes exitosos
+- **Gestión de Fallos**: Maneja pagos fallidos según la configuración
+- **Registro en PMPro**: Opcional registro de todos los pagos en el historial de PMPro
 
 ### ✅ Panel de Administración Completo
 
@@ -49,10 +49,10 @@ Interfaz moderna y profesional con **4 secciones principales**:
 #### **Configuraciones**
 
 - Ajustes centralizados para todas las opciones del plugin
-- Configuración de credenciales de API para gateways de pago
+- Mapeo directo entre niveles de PMPro y productos de WooCommerce
 - Validación en tiempo real de configuraciones
-- Indicadores visuales de estado (Sincronización, Debug, API)
-- Auto-guardado de borradores cada 30 segundos
+- Indicadores visuales de estado (Sincronización, Debug, Dependencias)
+- Configuración de logs y retención de datos
 
 #### **Logs del Sistema**
 
@@ -65,32 +65,32 @@ Interfaz moderna y profesional con **4 secciones principales**:
 - **Modal de detalles** para cada entrada de log
 - Limpieza automática de logs antiguos configurables
 
-#### **Herramientas** (¡NUEVO!)
+#### **Herramientas**
 
+- **Sincronización manual** de usuarios específicos
 - **Sincronización masiva** de todas las membresías
-- **Reparación de enlaces** entre suscripciones y membresías
-- **Verificación de estados** en gateways externos
+- **Reparación de enlaces** entre productos y niveles de membresía
+- **Verificación de estados** de membresías
 - **Limpieza de metadatos huérfanos**
 - **Herramienta de debug específica** para usuarios individuales
 - **Reinicio completo** de configuraciones
 
-#### **Estado del Sistema** (¡NUEVO!)
+#### **Estado del Sistema**
 
-- **Monitoreo de dependencias** en tiempo real
+- **Monitoreo de dependencias** (PMPro, WooCommerce, PagBank)
 - **Información del sistema** (versiones, límites, configuración)
-- **Estado de gateways** con prueba de conexión
-- **Estadísticas de logs** integradas
+- **Estado de gateways** activos
+- **Estadísticas de sincronización** integradas
 - **Configuraciones críticas** del plugin
 
-### ✅ Logging y Monitoreo Avanzado
+### ✅ Sistema de Logging Avanzado
 
 - **5 niveles de logs** (info, success, warning, error, debug)
 - **Base de datos dedicada** para logs con optimización de consultas
 - **Rotación automática** configurable por días
 - **Contexto detallado** con datos JSON estructurados
 - **Estadísticas en tiempo real** de eventos
-- **Integración con WordPress Debug** y logs del sistema
-- **API AJAX** para operaciones en tiempo real
+- **Integración con logs de WooCommerce**
 
 ### ✅ Interfaz de Usuario Moderna
 
@@ -104,10 +104,9 @@ Interfaz moderna y profesional con **4 secciones principales**:
 
 ### ✅ Compatibilidad Amplia
 
-- Funciona con WooCommerce Subscriptions
-- Compatible con PagBank y otros gateways
-- Detecta múltiples tipos de pedidos de renovación
-- Integración con webhooks existentes
+- **WooCommerce nativo**: Funciona con pedidos regulares y recurrentes
+- **PagBank Connect**: Integración optimizada para pagos recurrentes
+- **Cualquier Gateway**: Compatible con gateways que usen hooks estándar de WooCommerce
 - **Soporte multisitio** completo
 - **WordPress 5.0+** y **PHP 7.4+**
 
@@ -120,7 +119,6 @@ Interfaz moderna y profesional con **4 secciones principales**:
 ```
 pmpro-woo-sync/
 ├── pmpro-woo-sync.php # Archivo principal con autoloader optimizado
-├── readme.txt # Información estándar del plugin
 ├── uninstall.php # Script de desinstalación completa
 ├── /assets/ # Archivos CSS y JS optimizados
 │ ├── /css/
@@ -129,12 +127,9 @@ pmpro-woo-sync/
 │ └── admin.js # JavaScript con AJAX completo
 ├── /includes/ # Clases principales y lógica del negocio
 │ ├── class-pmpro-woo-sync.php # Orquestador principal
-│ ├── class-pmpro-woo-sync-integrations.php # Lógica de integración
+│ ├── class-pmpro-woo-sync-integrations.php # Lógica de integración WooCommerce
 │ ├── class-pmpro-woo-sync-logger.php # Sistema de logs avanzado
-│ ├── class-pmpro-woo-sync-settings.php # Gestión de configuraciones
-│ ├── class-pmpro-woo-sync-gateway-manager.php # Gestión de gateways
-│ └── /gateways/ # Clases específicas para cada gateway
-│ └── class-pmpro-woo-sync-pagbank-api.php # Integración PagBank
+│ └── class-pmpro-woo-sync-settings.php # Gestión de configuraciones
 ├── /admin/ # Sistema de administración completo
 │ ├── class-pmpro-woo-sync-admin.php # Controlador principal admin
 │ └── /partials/ # Plantillas HTML modulares
@@ -149,32 +144,38 @@ pmpro-woo-sync/
 ### Flujo de Funcionamiento
 
 ```
-    A[Pago Recurrente] --> B[Nuevo Pedido WooCommerce]
-    B --> C[Plugin Detecta Renovación]
-    C --> D{Estado del Pedido}
-    D -->|Exitoso| E[Extiende Membresía PMPro]
-    D -->|Fallido| F[Sistema de Reintentos]
-    D -->|Cancelado| G[Cancela Membresía PMPro]
-    E --> H[Registra Pago en PMPro]
-    F --> I[Programa Reintento]
-    G --> J[Actualiza Estado Usuario]
+Usuario Compra → Pedido WooCommerce → Plugin Detecta Pedido
+↓
+Estado del Pedido → Completado → Activa/Extiende Membresía PMPro
+→ Fallido → Cancela Membresía (opcional)
+→ Cancelado → Cancela Membresía PMPro
+↓
+Registra Pago en PMPro (opcional)
 ```
 
-### Flujo de Cancelación Bidireccional
+### Integración con PagBank Connect
+
+```
+PagBank Pago Recurrente → Hook 'woocommerce_pagbank_recurring_payment_complete'
+↓
+Plugin Extiende Membresía PMPro
+↓
+Registra Pago en PMPro (opcional)
+```
 
 ### Estados Manejados
 
-| Estado WooCommerce | Acción en PMPro                          | Log Level |
-| ------------------ | ---------------------------------------- | --------- |
-| `completed`        | ✅ Extiende membresía + registra pago     | `success` |
-| `processing`       | ✅ Extiende membresía + registra pago     | `info`    |
-| `failed`           | ⚠️ Programa reintento automático         | `warning` |
-| `cancelled`        | ❌ Cancela membresía + cancela en gateway | `info`    |
+| Estado WooCommerce | Acción en PMPro                             | Log Level |
+| ------------------ | ------------------------------------------- | --------- |
+| `completed`        | ✅ Activa/Extiende membresía + registra pago | `success` |
+| `processing`       | ✅ Activa/Extiende membresía + registra pago | `info`    |
+| `failed`           | ❌ Cancela membresía (si está configurado)   | `warning` |
+| `cancelled`        | ❌ Cancela membresía                         | `info`    |
+| `refunded`         | ❌ Cancela membresía                         | `info`    |
 
-* * *
+---
 
-📥 Instalación
---------------
+## 📥 Instalación
 
 ### Requisitos del Sistema
 
@@ -186,59 +187,83 @@ pmpro-woo-sync/
 | PHP                  | 7.4+           | 8.1+        |
 | MySQL                | 5.6+           | 8.0+        |
 
+### Dependencias Adicionales
+
+| Plugin                                    | Propósito                                      | Beneficio                                                 |
+| ----------------------------------------- | ---------------------------------------------- | --------------------------------------------------------- |
+| Paid Memberships Pro - WooCommerce Add On | Integración Paid Memberships Pro - WooCommerce | Vincula membresías de PMPro con productos de WooCommerce  |
+| PagBank Connect                           | Pagos recurrentes en Brasil                    | Integración optimizada para pagos recurrentes automáticos |
+
 ### Pasos de Instalación
 
-1. **Descarga** el repositorio completo del plugin
+1. **Descarga** el repositorio completo del plugin
+2. **Sube** la carpeta `pmpro-woo-sync` a `/wp-content/plugins/`
+3. **Activa** el plugin desde el panel de WordPress
+4. **Configura** navegando a **`PMPro-Woo-Sync`** en el menú lateral
 
-2. **Sube** la carpeta `pmpro-woo-sync` a `/wp-content/plugins/`
+---
 
-3. **Activa** el plugin desde el panel de WordPress
-
-4. **Configura** navegando a **`PMPro-Woo-Sync`** en el menú lateral
-
-* * *
-
-⚙️ Configuración
-----------------
+## ⚙️ Configuración
 
 ### Panel de Administración (Recomendado)
 
-Accede a: **WordPress Admin → PMPro-Woo-Sync**
+Accede a: **WordPress Admin → PMPro-Woo-Sync → Configuraciones**
 
 #### Configuraciones Principales
 
-* ✅ **Habilitar/Deshabilitar Sincronización**
-* ✅ **Modo Debug** para troubleshooting detallado
-* ✅ **Configuración de Gateways** (API Keys, modos Sandbox/Live)
-* ✅ **Configuración de Reintentos** (máximo, intervalos)
-* ✅ **Retención de Logs** (días de conservación)
-* ✅ **Tamaño de Lote** para procesamientos masivos
+* ✅ **Habilitar/Deshabilitar Sincronización**
+* ✅ **Dirección de Sincronización** (Bidireccional, PMPro→WooCommerce, WooCommerce→PMPro)
+* ✅ **Mapeo de Niveles**: Vincula niveles de PMPro con productos de WooCommerce
+* ✅ **Registrar Pagos en PMPro** (recomendado para trazabilidad completa)
+* ✅ **Sincronizar Pedidos Fallidos** (cancelar membresías cuando fallan pagos)
+* ✅ **Auto-vincular Productos** (basado en nombres similares)
+
+#### Configuración de Logs
+
+* ✅ **Habilitar Logging**
+* ✅ **Nivel de Log** (Solo errores, Advertencias, Información, Debug completo)
+* ✅ **Retención de Logs** (días de conservación)
+* ✅ **Modo Debug** para troubleshooting detallado
 
 #### Indicadores de Estado Visual
 
 El panel muestra en tiempo real:
 
-* 🟢 **Sincronización Activa**
-* 🟡 **Modo Debug** (si está habilitado)
-* 🟢 **PagBank API** (si está configurada)
+* 🟢 **Sincronización Activa**
+* 🟢 **Dependencias OK** (PMPro, WooCommerce, etc.)
+* 🟡 **Modo Debug** (si está habilitado)
+
+### Mapeo de Productos
+
+El paso más importante es mapear correctamente los niveles de membresía de PMPro con los productos de WooCommerce:
+
+1. Ve a **PMPro-Woo-Sync → Configuraciones**
+2. En la sección **"Mapeo de Niveles de Membresía"**
+3. Para cada nivel de PMPro, selecciona el producto de WooCommerce correspondiente
+4. Guarda la configuración
 
 ### Configuración Avanzada por Hooks
 
 ```php
-// Cambiar máximo de reintentos
-add_filter('pmpro_woo_sync_max_retries', function($max) {
-    return 5; // 5 reintentos en lugar de 3
+// Personalizar duración de membresía por producto
+add_filter('pmpro_woo_sync_membership_duration', function($duration, $product_id) {
+    // Ejemplo: Producto ID 123 dura 6 meses
+    if ($product_id == 123) {
+        return '6 months';
+    }
+    return $duration; // Por defecto 1 año
+}, 10, 2);
+
+// Personalizar nivel de log mínimo
+add_filter('pmpro_woo_sync_min_log_level', function($level) {
+    return 'warning'; // Solo warnings y errores
 });
 
-// Cambiar días entre reintentos
-add_filter('pmpro_woo_sync_retry_delay', function($days) {
-    return 3; // 3 días en lugar de 2
-});
-
-// Personalizar timeout de API
-add_filter('pmpro_woo_sync_api_timeout', function($timeout) {
-    return 60; // 60 segundos en lugar de 30
-});
+// Hook después de activar membresía
+add_action('pmpro_woo_sync_membership_activated', function($user_id, $level_id, $order) {
+    // Tu código personalizado aquí
+    // Ejemplo: enviar email de bienvenida, actualizar otros sistemas, etc.
+}, 10, 3);
 ```
 
 ---
@@ -257,17 +282,17 @@ add_filter('pmpro_woo_sync_api_timeout', function($timeout) {
 * 📱 **Interfaz responsive**: Optimizada para móviles
 * ⬇️ **Exportación**: Logs en formato JSON
 * 🔄 **Auto-refresh**: Actualización automática cada 30s
-* 📋 **Detalles completos**: Modal con contexto JSON
+* 📋 **Detalles completos**: Modal with contexto JSON
 
 #### Niveles de Log:
 
-| Nivel     | Color       | Uso                            |
-| --------- | ----------- | ------------------------------ |
-| `success` | 🟢 Verde    | Operaciones exitosas           |
-| `info`    | 🔵 Azul     | Información general            |
-| `warning` | 🟡 Amarillo | Advertencias no críticas       |
-| `error`   | 🔴 Rojo     | Errores que requieren atención |
-| `debug`   | 🟣 Morado   | Información detallada de debug |
+| Nivel     | Color       | Uso                                                                |
+| --------- | ----------- | ------------------------------------------------------------------ |
+| `success` | 🟢 Verde    | Operaciones exitosas (membresías activadas, pagos procesados)      |
+| `info`    | 🔵 Azul     | Información general (pedidos procesados, cambios de estado)        |
+| `warning` | 🟡 Amarillo | Advertencias no críticas (pagos fallidos, configuración subóptima) |
+| `error`   | 🔴 Rojo     | Errores que requieren atención (fallos de API, datos corruptos)    |
+| `debug`   | 🟣 Morado   | Información detallada de debug (solo en modo debug)                |
 
 ### Herramientas de Diagnóstico
 
@@ -275,51 +300,47 @@ add_filter('pmpro_woo_sync_api_timeout', function($timeout) {
 
 #### Herramientas Disponibles:
 
-1. **Sincronización Masiva**: Procesa todas las membresías activas
-2. **Reparación de Enlaces**: Corrige vinculaciones rotas
-3. **Verificación de Gateways**: Prueba conexiones con APIs externas
-4. **Debug de Usuario**: Información detallada de un usuario específico
-5. **Limpieza de Metadatos**: Elimina datos huérfanos
-6. **Reinicio de Configuraciones**: Restaura valores por defecto
+1. **Sincronización Manual de Usuario**: Sincroniza un usuario específico
+2. **Sincronización Masiva**: Procesa todas las membresías activas
+3. **Reparar Enlaces de Productos**: Corrige vinculaciones rotas entre productos y niveles
+4. **Verificar Estados de Membresías**: Revisa consistencia entre PMPro y WooCommerce
+5. **Limpiar Metadatos Huérfanos**: Elimina datos huérfanos del plugin
+6. **Debug de Usuario Específico**: Información completa de debug de un usuario
+7. **Reinicio de Configuraciones**: Restaura valores por defecto
 
-### Función de Debug Programática
+### Debug de Usuario Programático
 
 ```php
 // Obtener información completa de debug de un usuario
-$debug_info = pmpro_woo_sync_debug_info($user_id);
+if (function_exists('pmpro_woo_sync_get_user_debug_info')) {
+    $debug_info = pmpro_woo_sync_get_user_debug_info($user_id);
 
-/* Ejemplo de salida:
-Array(
-    [user_id] => 123
-    [current_membership] => Array(
-        [ID] => 1
-        [name] => Premium
-        [enddate] => 2024-12-31 23:59:59
-        [startdate] => 2024-01-01 00:00:00
-    )
-    [recent_orders] => Array(
-        [0] => Array(
-            [id] => 456
-            [status] => completed
-            [total] => 29.99
-            [date] => 2024-07-01 10:30:00
-            [is_subscription] => true
+    /* Ejemplo de salida:
+    Array(
+        [user_id] => 123
+        [current_membership] => Array(
+            [ID] => 1
+            [name] => Premium
+            [enddate] => 2024-12-31 23:59:59
+            [startdate] => 2024-01-01 00:00:00
+        )
+        [recent_orders] => Array(
+            [0] => Array(
+                [id] => 456
+                [status] => completed
+                [total] => 29.99
+                [date] => 2024-07-01 10:30:00
+                [payment_method] => pagbank
+            )
+        )
+        [sync_metadata] => Array(
+            [_pmpro_woo_sync_order_id] => 456
+            [_pmpro_woo_sync_last_sync] => 2024-07-01 10:35:00
+            [_pmpro_woo_sync_sync_status] => completed
         )
     )
-    [wc_subscriptions] => Array(
-        [0] => Array(
-            [id] => 789
-            [status] => active
-            [next_payment] => 2024-08-01 10:30:00
-            [pmpro_linked_level] => 1
-        )
-    )
-    [plugin_metadata] => Array(
-        [_pmpro_woo_sync_subscription_id] => 789
-        [_pmpro_woo_sync_last_sync] => 2024-07-01 10:35:00
-    )
-)
-*/
+    */
+}*/
 ```
 
 ---
@@ -331,36 +352,33 @@ Array(
 
 ### Información Monitoreada:
 
-#### Estado General
+#### Estado de Dependencias
 
-* ✅ Plugin activo y funcional
-* ✅ Sincronización habilitada/deshabilitada
-* ⚠️ Modo debug (si está activo)
+* 🟢 **Paid Memberships Pro** (versión y estado)
+* 🟢 **WooCommerce** (versión y estado)
+* 🟢 **Paid Memberships Pro - WooCommerce Add On** (integración)
+* 🟢 **PagBank Connect** (para pagos recurrentes)
 
 #### Información del Sistema
 
 * Versiones (Plugin, WordPress, PHP, MySQL)
-* Límites del servidor (memoria, ejecución, uploads)
+* Límites del servidor (memoria, ejecución)
+* Gateways de pago activos
 * Configuración crítica del plugin
 
-#### Dependencias
+#### Estadísticas de Sincronización
 
-* 🟢 Paid Memberships Pro (con versión)
-* 🟢 WooCommerce (con versión)
-* 🟡 WooCommerce Subscriptions (recomendado)
+* Usuarios sincronizados totales
+* Pedidos activos monitoreados
+* Última sincronización realizada
+* Errores en las últimas 24 horas
 
-#### Estado de Gateways
+#### Configuración Actual
 
-* API de PagBank (configurada/no configurada)
-* Modo del gateway (Live/Sandbox)
-* Prueba de conexión en tiempo real
-
-#### Estadísticas de Logs
-
-* Total de logs almacenados
-* Logs de las últimas 24 horas
-* Contadores por nivel de error
-* Enlaces directos para revisar errores
+* Estado de sincronización (habilitada/deshabilitada)
+* Modo debug (activado/desactivado)
+* Logging habilitado/deshabilitado
+* Número de niveles mapeados
 
 * * *
 
@@ -369,72 +387,55 @@ Array(
 
 ### Problemas Comunes y Soluciones
 
-#### 1. Membresías no se renuevan
+#### 1. Membresías no se activan con pedidos completados
 
 **Diagnóstico:**
 
-1. Verificar logs en: PMPro-Woo-Sync → Logs
-2. Filtrar por nivel "error" o "warning"
-3. Usar herramienta de debug específica para el usuario afectado
+1. Verificar logs en: PMPro-Woo-Sync → Logs
+2. Comprobar mapeo: ¿El producto está vinculado a un nivel de PMPro?
+3. Usar herramienta de debug específica para el usuario afectado
 
 **Posibles causas:**
 
-* Producto WooCommerce no vinculado correctamente
-* Error en la API del gateway
-* Configuración incorrecta de ciclos de facturación
+* Producto WooCommerce no mapeado a nivel de PMPro
+* Sincronización deshabilitada
+* Error en la configuración del plugin
 
-#### 2. Múltiples renovaciones duplicadas
-
-**Diagnóstico:**
-
-* Revisar hooks duplicados en `functions.php`
-* Verificar múltiples integraciones activas
-* Comprobar logs para identificar fuente del problema
-
-#### 3. Cancelaciones no se propagan al gateway
+#### 2. Pagos recurrentes no extienden membresías
 
 **Diagnóstico:**
 
-1. Verificar configuración de API del gateway
-2. Revisar logs para errores de comunicación
-3. Comprobar vinculación membresía-suscripción
-4. Usar herramienta "Verificar Estados de Gateway"
+1. Verificar que PagBank Connect esté activo y configurado
+2. Revisar logs para hooks de PagBank (`woocommerce_pagbank_recurring_payment_complete`)
+3. Comprobar que el producto original esté correctamente mapeado
 
 **Posibles causas:**
 
-* Producto WooCommerce no vinculado correctamente
-* Error en la API del gateway
-* Configuración incorrecta de ciclos de facturación
+* PagBank Connect no está enviando los hooks correctos
+* Usuario no tiene membresía activa para extender
+* Configuración incorrecta del producto recurrente
 
-#### 2. Múltiples renovaciones duplicadas
-
-**Diagnóstico:**
-
-* Revisar hooks duplicados en `functions.php`
-* Verificar múltiples integraciones activas
-* Comprobar logs para identificar fuente del problema
-
-#### 3. Cancelaciones no se propagan al gateway
-
-**Diagnóstico:**
-
-1. Verificar configuración de API del gateway
-2. Revisar logs para errores de comunicación
-3. Comprobar vinculación membresía-suscripción
-4. Usar herramienta "Verificar Estados de Gateway"
-5. Logs no aparecen o se llenan muy rápido
+#### 3. Logs no aparecen o se llenan muy rápido
 
 **Soluciones:**
 
 * Ajustar nivel de logging (desactivar debug en producción)
-* Configurar retención de logs apropiada
+* Configurar retención de logs apropiada (7-30 días recomendado)
 * Usar limpieza automática de logs antiguos
+
+#### 4. Plugin no detecta PagBank Connect
+
+**Diagnóstico:**
+
+1. Verificar que PagBank Connect esté activo
+2. Comprobar versión compatible del plugin PagBank
+3. Revisar logs de WordPress para errores de hooks
 
 ### Activar Debug Completo
 
 #### Desde el Panel de Administración:
 
-**PMPro-Woo-Sync → Configuraciones → Habilitar Modo Debug**
+**PMPro-Woo-Sync → Configuraciones → Modo Debug ✅**
 
 #### Desde wp-config.php:
 
@@ -452,108 +453,117 @@ define('PMPRO_WOO_SYNC_DEBUG', true);
 
 El plugin incluye **verificaciones automáticas** que alertan sobre:
 
-* ❌ Dependencias faltantes
-* ⚠️ Configuraciones subóptimas
-* 🔧 Problemas de conectividad con gateways
+* ❌ Dependencias faltantes (PMPro, WooCommerce)
+* ⚠️ Configuraciones subóptimas (productos sin mapear)
+* 🔧 Problemas de conectividad
 * 📊 Estadísticas anómalas en logs
 
 * * *
 
-📊 Casos de Uso Avanzados
--------------------------
+📊 Casos de Uso
+---------------
 
-### Caso 1: E-commerce con Múltiples Gateways
+### Caso 1: Membresía Mensual con PagBank
 
-```graph
-    A[Usuario Compra] --> B{Gateway Elegido}
-    B -->|PagBank| C[Procesa con PagBank API]
-    B -->|Stripe| D[Procesa con Stripe API]
-    B -->|PayPal| E[Procesa con PayPal API]
-    C --> F[Sincronización PMPro]
-    D --> F
-    E --> F
-    F --> G[Usuario Accede a Contenido]
+```plaintext
+Usuario compra producto "Membresía Premium Mensual" (R$ 29,90)
+↓
+WooCommerce procesa el pago inicial
+↓
+Plugin activa membresía "Premium" en PMPro
+↓
+PagBank programa pagos recurrentes mensuales
+↓
+Cada mes: PagBank cobra → Hook → Plugin extiende membresía
 ```
 
-### Caso 2: Membresías con Diferentes Ciclos
+### Caso 2: Diferentes Tipos de Membresías
 
-| Tipo de Membresía | Ciclo WooCommerce | Acción PMPro          |
-| ----------------- | ----------------- | --------------------- |
-| Mensual Básica    | 30 días           | Renueva cada 30 días  |
-| Trimestral Pro    | 90 días           | Renueva cada 90 días  |
-| Anual Premium     | 365 días          | Renueva cada 365 días |
+| Tipo de Membresía  | Producto WooCommerce | Mapeo PMPro | Duración |
+| ------------------ | -------------------- | ----------- | -------- |
+| Básica Mensual     | ID: 100              | Nivel ID: 1 | 30 días  |
+| Premium Trimestral | ID: 101              | Nivel ID: 2 | 90 días  |
+| VIP Anual          | ID: 102              | Nivel ID: 3 | 365 días |
 
-### Caso 3: Integración con Marketing Automation
+### Caso 3: Integración con Hooks Personalizados
 
 ```php
-// Hook personalizado tras renovación exitosa
-add_action('pmpro_woo_sync_membership_renewed', function($user_id, $level_id) {
-    // Notificar a sistema de email marketing
-    // Actualizar segmentación de usuarios
-    // Activar secuencias de contenido
-});
+// Acciones después de activar membresía
+add_action('pmpro_woo_sync_membership_activated', function($user_id, $level_id, $order) {
+    // Enviar email de bienvenida personalizado
+    wp_mail(
+        get_userdata($user_id)->user_email,
+        'Bienvenido a tu nueva membresía',
+        'Tu membresía ha sido activada exitosamente.'
+    );
+
+    // Actualizar sistema de email marketing
+    // Activar acceso a contenido premium
+    // Log personalizado
+}, 10, 3);
+
+// Acciones cuando pago recurrente es exitoso
+add_action('pmpro_woo_sync_recurring_payment_complete', function($user_id, $order) {
+    // Notificar renovación exitosa
+    // Actualizar estadísticas
+    // Activar contenido del siguiente período
+}, 10, 2);
 ```
 
 ---
 
-🔧 Integración con Gateways
---------
+🔧 Integración con PagBank Connect
+--------------------------------------
 
-### PagBank Connect - Configuración Completa
+### Configuración Recomendada
 
-#### Configuración en el Plugin:
+#### En PagBank Connect:
 
-1. **API Key**: Tu clave de API de PagBank
-2. **Modo**: Sandbox (pruebas) o Live (producción)
-3. **Timeout**: Tiempo límite para llamadas API (30s recomendado)
-4. **Webhook URL**: Configurado automáticamente
+1. **Activar pagos recurrentes** en la configuración del gateway
+2. **Configurar webhooks** (se configuran automáticamente)
+3. **Establecer método de pago** como PagBank en productos recurrentes
 
-#### Eventos Manejados:
+#### En PMPro-Woo-Sync:
 
-```
-// Webhooks automáticos de PagBank
-'subscription.payment_succeeded' => 'renovar_membresia'
-'subscription.payment_failed'    => 'programar_reintento'  
-'subscription.canceled'          => 'cancelar_membresia'
-'subscription.payment_retrying'  => 'log_reintento'
-```
+1. **Mapear productos** de WooCommerce con niveles de PMPro
+2. **Habilitar "Registrar Pagos en PMPro"** para trazabilidad completa
+3. **Configurar logs** en nivel "info" o superior
 
-### Stripe - Próximamente
-
-El plugin está preparado para soportar Stripe con:
-
-* Manejo de webhooks estándar
-* API de cancelaciones
-* Gestión de métodos de pago
-
-### Desarrollo de Nuevos Gateways
+### Hooks Específicos de PagBank Manejados
 
 ```php
-// Estructura base para nuevo gateway
-class PMPro_Woo_Sync_New_Gateway_API {
-    public function cancel_subscription($subscription_id) {
-        // Implementar lógica específica del gateway
-    }
+// Automáticamente manejados por el plugin:
+'woocommerce_pagbank_recurring_payment_complete' // Pago recurrente exitoso
+'woocommerce_pagbank_recurring_payment_failed'   // Pago recurrente falló
+```
 
-    public function test_connection() {
-        // Verificar conectividad con API
-    }
-}
+### Compatibilidad con Otros Gateways
+
+El plugin también funciona con cualquier gateway que use los hooks estándar de WooCommerce:
+
+```php
+// Hooks estándar de WooCommerce soportados:
+'woocommerce_order_status_completed'  // Pedido completado
+'woocommerce_order_status_processing' // Pedido en procesamiento
+'woocommerce_order_status_cancelled'  // Pedido cancelado
+'woocommerce_order_status_failed'     // Pedido fallido
+'woocommerce_order_status_refunded'   // Pedido reembolsado
 ```
 
 ---
 
-🤝 Contribución y Desarrollo
-----------------------------
+## 🤝 Contribución y Desarrollo
 
 ### Reportar Issues
 
-1. **Activar Debug Mode** en configuraciones del plugin
-2. **Reproducir el problema** paso a paso
-3. **Exportar logs relevantes** desde el panel de administración
-4. **Crear issue en GitHub** con información completa:
-   * Versiones de dependencias
-   * Configuración de gateway
+1. **Activar Debug Mode** en configuraciones del plugin
+2. **Reproducir el problema** paso a paso
+3. **Exportar logs relevantes** desde el panel de administración
+4. **Crear issue en GitHub** con información completa:
+   * Versiones de dependencias (WordPress, WooCommerce, PMPro)
+   * Versión de Paid Memberships Pro - WooCommerce Add On
+   * Versión de PagBank Connect
+   * Configuración del mapeo de productos
    * Logs exportados
    * Pasos para reproducir
 
@@ -563,104 +573,67 @@ class PMPro_Woo_Sync_New_Gateway_API {
 # Clonar repositorio
 git clone https://github.com/DavidCamejo/pmpro-woo-sync.git
 
-# Estructura para desarrollo
-pmpro-woo-sync/
-├── /tests/                    # Tests unitarios (próximamente)
-├── /docs/                     # Documentación adicional
-├── package.json              # Dependencias de desarrollo
-└── webpack.config.js         # Build de assets
+# Instalar dependencias de desarrollo (próximamente)
+npm install
+
+# Construir assets
+npm run build
 ```
 
 ### Coding Standards
 
-* **PSR-4** para autoloading de clases
-* **WordPress Coding Standards** para PHP
+* **PSR-4** para autoloading de clases
+* **WordPress Coding Standards** para PHP
 * **ESLint** para JavaScript
-* **Documentación PHPDoc** completa
-* **Hooks y filtros** bien documentados
+* **Documentación PHPDoc** completa
+* **Hooks y filtros** bien documentados
+* **Escape de output** completo para prevenir XSS
+* **Sanitización de input** en todas las entradas
 
 * * *
 
-📝 Changelog Completo
----------------------
+## 📝 Changelog
 
-### v1.0.0 - 2025-07-30
+### v2.0.0 - 2025-08-01
+
+#### 🔄 BREAKING CHANGES
+
+* **Eliminada dependencia** de WooCommerce Subscriptions
+* **Refactorización completa** para trabajar directamente con WooCommerce
+* **Optimización especófica** para PagBank Connect
 
 #### ✅ Added
 
-* **Sistema de Administración Completo**
-  
-  * Panel de configuraciones con validación en tiempo real
-  * Visualizador de logs con filtros avanzados y búsqueda
-  * Página de herramientas con utilidades de diagnóstico
-  * Dashboard de estado del sistema con monitoreo en vivo
+* **Integración nativa con WooCommerce**: Funciona con pedidos regulares y recurrentes
+* **Soporte optimizado para PagBank Connect**: Manejo especófico de hooks de pagos recurrentes
+* **Mapeo directo de productos**: Vinculación simplificada entre productos WooCommerce y niveles PMPro
+* **Panel de configuraciones mejorado**: Interfaz más intuitiva y completa
+* **Sistema de logging mejorado**: Mejor rendimiento y opciones de filtrado
+* **Herramientas de diagnóstico**: Nuevas utilidades para debug y mantenimiento
 
-* **Interfaz de Usuario Moderna**
-  
-  * Diseño responsive optimizado para todos los dispositivos
-  * Indicadores visuales de estado con animaciones
-  * Sistema de notificaciones AJAX no intrusivas
-  * Loading states y feedback inmediato en todas las acciones
+#### 🔄Changed
 
-* **Sistema de Logging Avanzado**
-  
-  * 5 niveles de logs (success, info, warning, error, debug)
-  * Base de datos dedicada con consultas optimizadas
-  * Exportación de logs en formato JSON
-  * Auto-refresh cada 30 segundos con pausa automática
-  * Estadísticas en tiempo real de eventos
-  * Modal de detalles con contexto JSON completo
+* **Arquitectura simplificada**: Menos dependencias, mejor rendimiento
+* **Configuración centralizada**: Todo desde el panel de administración
+* **Hooks actualizados**: Enfoque en hooks estándar de WooCommerce y PagBank
 
-* **Herramientas de Diagnóstico**
-  
-  * Función de debug específica por usuario
-  * Sincronización masiva de membresías
-  * Reparación automática de enlaces rotos
-  * Verificación de estados en gateways externos
-  * Limpieza de metadatos huérfanos
+#### 🗑️Removed
 
-* **Cancelación Bidireccional**
-  
-  * Propagación de cancelaciones desde PMPro a gateways
-  * Soporte completo para PagBank API
-  * Logging detallado de todas las operaciones de cancelación
+* **Dependencia de WooCommerce Subscriptions**: Ya no es necesario
+* **Complejidad innecesaria**: Código especófico para múltiples sistemas de suscripción
+* **Configuraciones obsoletas**: Opciones que ya no son relevantes
 
-* **Características Técnicas**
-  
-  * Autoloader optimizado con mapeo directo de clases
-  * Verificación robusta de dependencias al activar
-  * Soporte completo para multisitio
-  * Scripts y estilos cargados solo en páginas relevantes
-  * Validación client-side y server-side
-  * Escape completo de salidas para prevenir XSS
-  * Nonces en todas las operaciones AJAX
+### v1.0.0 - 2025-07-30
 
-#### 🔄 Changed
-
-* Migración completa a arquitectura orientada a objetos
-* Panel de administración centralizado reemplaza configuración manual
-* Logs almacenados en base de datos en lugar de archivos
-* Sistema de configuraciones con valores predeterminados
-
-#### 🐛 Fixed
-
-* Advertencia de propiedades dinámicas en PHP 8+
-* Error de grupo de opciones en WordPress Settings API
-* Problemas de sanitización y escape de datos
-* Conflictos con otros plugins de membresía
-
-#### 🗑️ Removed
-
-* Configuraciones hardcodeadas en archivo principal
-* Dependencia de archivos de log externos
-* Funciones deprecated de versiones anteriores
+* **Lanzamiento inicial** con soporte para WooCommerce Subscriptions
+* **Sistema de administración completo**
+* **Logging avanzado** y herramientas de diagnóstico
 
 * * *
 
-📜 Licencia
------------
+## 📜 Licencia
 
-Este proyecto está bajo la **Licencia MIT**. Consulta el archivo `LICENSE` para más detalles.
+Este proyecto está bajo la **Licencia MIT**. Consulta el archivo `LICENSE` para más detalles.
 
 ### Términos de Uso
 
@@ -673,25 +646,23 @@ Este proyecto está bajo la **Licencia MIT**. Consulta el archivo `LICENSE` p
 
 * * *
 
-🙏 Agradecimientos
-------------------
+## 🙏 Agradecimientos
 
-* **Desarrollado por**: David Camejo
+* **Desarrollado por**: David Camejo
 * **Inspirado en**: Necesidades reales de sincronización PMPro-WooCommerce
-* **Basado en análisis de**: [PagBank Connect Plugin](https://github.com/r-martins/PagBank-WooCommerce)
+* **Optimizado para**: [PagBank Connect](https://github.com/r-martins/PagBank-WooCommerce) y pagos recurrentes en Brasil
 * **Testeado por**: Comunidad de desarrolladores WordPress
 
 * * *
 
-📞 Soporte y Contacto
----------------------
+## 📞 Soporte y Contacto
 
 ### Canales de Soporte
 
-* 📧 **Email**: jdavidcamejo@gmail.com
-* 🐛 **Issues**: GitHub Issues
-* 📚 **Documentación**: Wiki del Proyecto
-* 💬 **Discusiones**: GitHub Discussions
+* 📧 **Email**: jdavidcamejo@gmail.com
+* 🐛 **Issues**: [GitHub Issues](https://github.com/DavidCamejo/pmpro-woo-sync/issues)
+* 📚 **Documentación**: Este archivo
+* 💬 **Discusiones**: GitHub Discussions
 
 ### Antes de Contactar
 
@@ -705,11 +676,12 @@ Este proyecto está bajo la **Licencia MIT**. Consulta el archivo `LICENSE` p
 
 Incluir siempre:
 
-* Versión del plugin
+* Versión del plugin PMPro-Woo-Sync
 * Versión de WordPress
 * Versión de WooCommerce y Paid Memberships Pro
-* Versión de PagBank Connect Plugin
-* Configuración del gateway
+* Versión de Paid Memberships Pro - WooCommerce Add On
+* Versión de PagBank Connect
+* Configuración de mapeo de productos
 * Logs exportados del problema
 * Pasos detallados para reproducir
 
@@ -719,4 +691,4 @@ Incluir siempre:
 
 * * *
 
-*Última actualización: 30 de Julio, 2025*
+*Última actualización: 02 de Agosto, 2025*

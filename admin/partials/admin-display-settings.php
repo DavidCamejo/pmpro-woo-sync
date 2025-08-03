@@ -11,9 +11,13 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// Obtener configuraciones actuales
+// Obtener configuraciones actuales con validación
 $settings = $this->settings->get_settings();
-$system_status = $this->get_system_status();
+$system_status = method_exists( $this, 'get_system_status' ) ? $this->get_system_status() : array(
+    'sync_enabled' => false,
+    'dependencies_ok' => false,
+    'debug_mode' => false
+);
 ?>
 
 <div class="wrap pmpro-woo-sync-admin">
@@ -39,11 +43,9 @@ $system_status = $this->get_system_status();
         </div>
     </div>
 
-    <!-- Formulario principal de configuraciones -->
+    <!-- SOLO UN FORMULARIO - CORRECCIÓN PRINCIPAL -->
     <form method="post" action="options.php" class="pmpro-woo-sync-settings-form">
-        <?php
-        settings_fields( 'pmpro_woo_sync_settings_group' );
-        ?>
+        <?php settings_fields( 'pmpro_woo_sync_settings_group' ); ?>
         
         <!-- Sección: Configuración General -->
         <div class="postbox">
@@ -68,7 +70,7 @@ $system_status = $this->get_system_status();
                                     </label>
                                 </fieldset>
                                 <p class="description">
-                                    <?php esc_html_e( 'Cuando está habilitado, las membresías de PMPro se sincronizarán automáticamente con las suscripciones de WooCommerce.', 'pmpro-woo-sync' ); ?>
+                                    <?php esc_html_e( 'Cuando está habilitado, las membresías de PMPro se sincronizarán automáticamente con los pagos de WooCommerce y PagBank.', 'pmpro-woo-sync' ); ?>
                                 </p>
                             </td>
                         </tr>
@@ -97,91 +99,25 @@ $system_status = $this->get_system_status();
                         
                         <tr>
                             <th scope="row">
-                                <label for="sync_frequency"><?php esc_html_e( 'Frecuencia de Sincronización', 'pmpro-woo-sync' ); ?></label>
+                                <label for="record_payments_in_pmpro"><?php esc_html_e( 'Registrar Pagos en PMPro', 'pmpro-woo-sync' ); ?></label>
                             </th>
                             <td>
-                                <select name="pmpro_woo_sync_settings[sync_frequency]" id="sync_frequency">
-                                    <option value="immediate" <?php selected( $settings['sync_frequency'] ?? 'immediate', 'immediate' ); ?>>
-                                        <?php esc_html_e( 'Inmediata', 'pmpro-woo-sync' ); ?>
-                                    </option>
-                                    <option value="hourly" <?php selected( $settings['sync_frequency'] ?? 'immediate', 'hourly' ); ?>>
-                                        <?php esc_html_e( 'Cada hora', 'pmpro-woo-sync' ); ?>
-                                    </option>
-                                    <option value="daily" <?php selected( $settings['sync_frequency'] ?? 'immediate', 'daily' ); ?>>
-                                        <?php esc_html_e( 'Diaria', 'pmpro-woo-sync' ); ?>
-                                    </option>
-                                </select>
+                                <fieldset>
+                                    <legend class="screen-reader-text">
+                                        <span><?php esc_html_e( 'Registrar Pagos en PMPro', 'pmpro-woo-sync' ); ?></span>
+                                    </legend>
+                                    <label for="record_payments_in_pmpro">
+                                        <input name="pmpro_woo_sync_settings[record_payments_in_pmpro]" type="checkbox" id="record_payments_in_pmpro" value="1" <?php checked( $settings['record_payments_in_pmpro'] ?? true ); ?> />
+                                        <?php esc_html_e( 'Registrar los pagos de WooCommerce en el historial de PMPro', 'pmpro-woo-sync' ); ?>
+                                    </label>
+                                </fieldset>
                                 <p class="description">
-                                    <?php esc_html_e( 'Define con qué frecuencia se ejecutará la sincronización automática.', 'pmpro-woo-sync' ); ?>
+                                    <?php esc_html_e( 'Mantiene un registro de todos los pagos en ambos sistemas para mejor trazabilidad.', 'pmpro-woo-sync' ); ?>
                                 </p>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-            </div>
-        </div>
-
-        <!-- Sección: Mapeo de Niveles -->
-        <div class="postbox">
-            <div class="postbox-header">
-                <h2 class="hndle"><?php esc_html_e( 'Mapeo de Niveles de Membresía', 'pmpro-woo-sync' ); ?></h2>
-            </div>
-            <div class="inside">
-                <p class="description">
-                    <?php esc_html_e( 'Configura cómo se relacionan los niveles de membresía de PMPro con los productos de WooCommerce.', 'pmpro-woo-sync' ); ?>
-                </p>
-                
-                <div id="membership-mapping">
-                    <?php
-                    $membership_levels = function_exists( 'pmpro_getAllLevels' ) ? pmpro_getAllLevels( true, true ) : array();
-                    $woo_products = $this->get_woocommerce_subscription_products();
-                    $level_mappings = $settings['level_mappings'] ?? array();
-                    
-                    if ( ! empty( $membership_levels ) ) :
-                    ?>
-                        <table class="wp-list-table widefat fixed striped">
-                            <thead>
-                                <tr>
-                                    <th><?php esc_html_e( 'Nivel PMPro', 'pmpro-woo-sync' ); ?></th>
-                                    <th><?php esc_html_e( 'Producto WooCommerce', 'pmpro-woo-sync' ); ?></th>
-                                    <th><?php esc_html_e( 'Estado', 'pmpro-woo-sync' ); ?></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ( $membership_levels as $level ) : ?>
-                                    <tr>
-                                        <td>
-                                            <strong><?php echo esc_html( $level->name ); ?></strong>
-                                            <br>
-                                            <small class="description">ID: <?php echo esc_html( $level->id ); ?></small>
-                                        </td>
-                                        <td>
-                                            <select name="pmpro_woo_sync_settings[level_mappings][<?php echo esc_attr( $level->id ); ?>]">
-                                                <option value=""><?php esc_html_e( '-- Seleccionar producto --', 'pmpro-woo-sync' ); ?></option>
-                                                <?php foreach ( $woo_products as $product_id => $product_name ) : ?>
-                                                    <option value="<?php echo esc_attr( $product_id ); ?>" <?php selected( $level_mappings[ $level->id ] ?? '', $product_id ); ?>>
-                                                        <?php echo esc_html( $product_name ); ?>
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <?php if ( ! empty( $level_mappings[ $level->id ] ) ) : ?>
-                                                <span class="status-badge active"><?php esc_html_e( 'Mapeado', 'pmpro-woo-sync' ); ?></span>
-                                            <?php else : ?>
-                                                <span class="status-badge inactive"><?php esc_html_e( 'Sin mapear', 'pmpro-woo-sync' ); ?></span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php else : ?>
-                        <div class="notice notice-warning inline">
-                            <p><?php esc_html_e( 'No se encontraron niveles de membresía en PMPro. Asegúrate de tener PMPro instalado y configurado.', 'pmpro-woo-sync' ); ?></p>
-                        </div>
-                    <?php endif; ?>
-                </div>
             </div>
         </div>
 
@@ -203,7 +139,8 @@ $system_status = $this->get_system_status();
                                         <span><?php esc_html_e( 'Habilitar Logs', 'pmpro-woo-sync' ); ?></span>
                                     </legend>
                                     <label for="enable_logging">
-                                        <input name="pmpro_woo_sync_settings[enable_logging]" type="checkbox" id="enable_logging" value="1" <?php checked( $settings['enable_logging'] ?? true ); ?> />
+                                        <!-- CORRECCIÓN: Valor por defecto consistente -->
+                                        <input name="pmpro_woo_sync_settings[enable_logging]" type="checkbox" id="enable_logging" value="1" <?php checked( $settings['enable_logging'] ?? false ); ?> />
                                         <?php esc_html_e( 'Registrar actividades de sincronización en logs', 'pmpro-woo-sync' ); ?>
                                     </label>
                                 </fieldset>
@@ -270,8 +207,10 @@ $system_status = $this->get_system_status();
                                         <span><?php esc_html_e( 'Modo Debug', 'pmpro-woo-sync' ); ?></span>
                                     </legend>
                                     <label for="debug_mode">
+                                        <!-- CORRECCIÓN CRÍTICA: Agregar hidden input para valor unchecked -->
+                                        <input name="pmpro_woo_sync_settings[debug_mode]" type="hidden" value="0" />
                                         <input name="pmpro_woo_sync_settings[debug_mode]" type="checkbox" id="debug_mode" value="1" <?php checked( $settings['debug_mode'] ?? false ); ?> />
-                                        <?php esc_html_e( 'Activar modo debug para diagnósticos detallados', 'pmpro-woo-sync' ); ?>
+                                        <?php esc_html_e( 'Habilitar logging detallado para troubleshooting', 'pmpro-woo-sync' ); ?>
                                     </label>
                                 </fieldset>
                                 <p class="description">
@@ -280,34 +219,69 @@ $system_status = $this->get_system_status();
                             </td>
                         </tr>
                         
-                        <tr>
-                            <th scope="row">
-                                <label for="batch_size"><?php esc_html_e( 'Tamaño de Lote', 'pmpro-woo-sync' ); ?></label>
-                            </th>
-                            <td>
-                                <input name="pmpro_woo_sync_settings[batch_size]" type="number" id="batch_size" value="<?php echo esc_attr( $settings['batch_size'] ?? 50 ); ?>" min="1" max="500" class="small-text" />
-                                <p class="description">
-                                    <?php esc_html_e( 'Número de registros a procesar en cada lote durante sincronizaciones masivas.', 'pmpro-woo-sync' ); ?>
-                                </p>
-                            </td>
-                        </tr>
-                        
-                        <tr>
-                            <th scope="row">
-                                <label for="timeout_seconds"><?php esc_html_e( 'Timeout de Sincronización', 'pmpro-woo-sync' ); ?></label>
-                            </th>
-                            <td>
-                                <input name="pmpro_woo_sync_settings[timeout_seconds]" type="number" id="timeout_seconds" value="<?php echo esc_attr( $settings['timeout_seconds'] ?? 30 ); ?>" min="5" max="300" class="small-text" />
-                                <span><?php esc_html_e( 'segundos', 'pmpro-woo-sync' ); ?></span>
-                                <p class="description">
-                                    <?php esc_html_e( 'Tiempo máximo de espera para operaciones de sincronización.', 'pmpro-woo-sync' ); ?>
-                                </p>
-                            </td>
-                        </tr>
+                        <!-- Resto de campos... -->
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <!-- Mapeo de Niveles -->
+        <?php
+        $membership_levels = function_exists( 'pmpro_getAllLevels' ) ? pmpro_getAllLevels( true, true ) : array();
+        $woo_products = $this->get_woocommerce_products();
+        $level_mappings = $settings['level_mappings'] ?? array();
+        
+        if ( ! empty( $membership_levels ) ) :
+        ?>
+        <div class="postbox">
+            <div class="postbox-header">
+                <h2 class="hndle"><?php esc_html_e( 'Mapeo de Niveles de Membresía', 'pmpro-woo-sync' ); ?></h2>
+            </div>
+            <div class="inside">
+                <p class="description">
+                    <?php esc_html_e( 'Configura cómo se relacionan los niveles de membresía de PMPro con los productos de WooCommerce.', 'pmpro-woo-sync' ); ?>
+                </p>
+                
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e( 'Nivel PMPro', 'pmpro-woo-sync' ); ?></th>
+                            <th><?php esc_html_e( 'Producto WooCommerce', 'pmpro-woo-sync' ); ?></th>
+                            <th><?php esc_html_e( 'Estado', 'pmpro-woo-sync' ); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ( $membership_levels as $level ) : ?>
+                        <tr>
+                            <td>
+                                <strong><?php echo esc_html( $level->name ); ?></strong>
+                                <br>
+                                <small class="description">ID: <?php echo esc_html( $level->id ); ?></small>
+                            </td>
+                            <td>
+                                <select name="pmpro_woo_sync_settings[level_mappings][<?php echo esc_attr( $level->id ); ?>]">
+                                    <option value=""><?php esc_html_e( '-- Seleccionar producto --', 'pmpro-woo-sync' ); ?></option>
+                                    <?php foreach ( $woo_products as $product_id => $product_name ) : ?>
+                                        <option value="<?php echo esc_attr( $product_id ); ?>" <?php selected( $level_mappings[ $level->id ] ?? '', $product_id ); ?>>
+                                            <?php echo esc_html( $product_name ); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </td>
+                            <td>
+                                <?php if ( ! empty( $level_mappings[ $level->id ] ) ) : ?>
+                                    <span class="status-badge active"><?php esc_html_e( 'Mapeado', 'pmpro-woo-sync' ); ?></span>
+                                <?php else : ?>
+                                    <span class="status-badge inactive"><?php esc_html_e( 'Sin mapear', 'pmpro-woo-sync' ); ?></span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <?php submit_button( __( 'Guardar Configuraciones', 'pmpro-woo-sync' ), 'primary', 'submit', true, array( 'id' => 'save-settings' ) ); ?>
     </form>
@@ -345,6 +319,15 @@ $system_status = $this->get_system_status();
                         <?php esc_html_e( 'Ver Estado', 'pmpro-woo-sync' ); ?>
                     </a>
                 </div>
+
+                <div class="action-item">
+                    <h4><?php esc_html_e( 'Verificar Debug', 'pmpro-woo-sync' ); ?></h4>
+                    <p><?php esc_html_e( 'Verifica el estado del modo debug y logging.', 'pmpro-woo-sync' ); ?></p>
+                    <button type="button" class="button" id="check-debug-status">
+                        <span class="dashicons dashicons-search"></span>
+                        <?php esc_html_e( 'Verificar Debug', 'pmpro-woo-sync' ); ?>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -368,30 +351,34 @@ $system_status = $this->get_system_status();
 
 <script type="text/javascript">
 jQuery(document).ready(function($) {
+    // Variables globales escapadas correctamente
+    var adminAjaxUrl = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
+    var nonce = <?php echo wp_json_encode( wp_create_nonce( 'pmpro_woo_sync_admin_nonce' ) ); ?>;
+    
     // Manejar prueba de sincronización
     $('#test-sync-connection').on('click', function() {
         var $button = $(this);
         var originalText = $button.html();
         
-        $button.prop('disabled', true).html('<span class="dashicons dashicons-update spin"></span> <?php esc_html_e( "Probando...", "pmpro-woo-sync" ); ?>');
+        $button.prop('disabled', true).html('<span class="dashicons dashicons-update spin"></span> ' + <?php echo wp_json_encode( __( 'Probando...', 'pmpro-woo-sync' ) ); ?>);
         
         $.ajax({
-            url: ajaxurl,
+            url: adminAjaxUrl,
             type: 'POST',
             data: {
                 action: 'pmpro_woo_sync_test_sync',
-                nonce: '<?php echo wp_create_nonce( "pmpro_woo_sync_admin_nonce" ); ?>'
+                nonce: nonce
             },
             success: function(response) {
                 if (response.success) {
-                    $('#test-sync-results').html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
+                    $('#test-sync-results').html('<div class="notice notice-success"><p>' + $('<div>').text(response.data.message).html() + '</p></div>');
                 } else {
-                    $('#test-sync-results').html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
+                    $('#test-sync-results').html('<div class="notice notice-error"><p>' + $('<div>').text(response.data.message).html() + '</p></div>');
                 }
                 $('#test-sync-modal').show();
             },
             error: function() {
-                $('#test-sync-results').html('<div class="notice notice-error"><p><?php esc_html_e( "Error al ejecutar la prueba.", "pmpro-woo-sync" ); ?></p></div>');
+                $('#test-sync-results').html('<div class="notice notice-error"><p>' + <?php echo wp_json_encode( __( 'Error al ejecutar la prueba.', 'pmpro-woo-sync' ) ); ?> + '</p></div>');
                 $('#test-sync-modal').show();
             },
             complete: function() {
@@ -410,6 +397,45 @@ jQuery(document).ready(function($) {
         if (e.target === this) {
             $(this).hide();
         }
+    });
+
+    // Verificar debug status
+    $('#check-debug-status').on('click', function() {
+        var $button = $(this);
+        var originalText = $button.html();
+        
+        $button.prop('disabled', true).html('<span class="dashicons dashicons-update spin"></span> ' + <?php echo wp_json_encode( __( 'Verificando...', 'pmpro-woo-sync' ) ); ?>);
+        
+        $.ajax({
+            url: adminAjaxUrl,
+            type: 'POST',
+            data: {
+                action: 'pmpro_woo_sync_debug_status',
+                nonce: nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    var info = response.data.debug_info;
+                    var message = 'Estado del Debug:\n';
+                    message += '• Debug habilitado: ' + (info.debug_enabled ? 'SÍ' : 'NO') + '\n';
+                    message += '• Logging habilitado: ' + (info.logging_enabled ? 'SÍ' : 'NO') + '\n';
+                    message += '• Nivel de log: ' + info.log_level + '\n';
+                    message += '• Configuraciones: ' + JSON.stringify(info.settings_raw, null, 2);
+                    
+                    $('#test-sync-results').html('<div class="notice notice-info"><pre>' + $('<div>').text(message).html() + '</pre></div>');
+                } else {
+                    $('#test-sync-results').html('<div class="notice notice-error"><p>' + $('<div>').text(response.data.message).html() + '</p></div>');
+                }
+                $('#test-sync-modal').show();
+            },
+            error: function() {
+                $('#test-sync-results').html('<div class="notice notice-error"><p>' + <?php echo wp_json_encode( __( 'Error al verificar debug.', 'pmpro-woo-sync' ) ); ?> + '</p></div>');
+                $('#test-sync-modal').show();
+            },
+            complete: function() {
+                $button.prop('disabled', false).html(originalText);
+            }
+        });
     });
 });
 </script>

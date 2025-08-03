@@ -11,14 +11,25 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// Obtener logs y configuración de paginación
-$logs         = $this->logger->get_logs();
-$log_levels   = $this->logger->get_log_levels();
+// Sanitizar y obtener parámetros de filtrado
+$search_term = sanitize_text_field( $_GET['s'] ?? '' );
+$level_filter = sanitize_text_field( $_GET['level'] ?? '' );
 $current_page = max( 1, intval( $_GET['paged'] ?? 1 ) );
-$per_page     = 50;
-$total_logs   = count( $logs );
-$total_pages  = max( 1, ceil( $total_logs / $per_page ) );
-$logs_page    = array_slice( $logs, ($current_page - 1) * $per_page, $per_page );
+$per_page = 50;
+
+// Obtener logs con filtros y paginación aplicados
+$log_args = array(
+    'search' => $search_term,
+    'level' => $level_filter,
+    'page' => $current_page,
+    'per_page' => $per_page
+);
+
+$logs_data = $this->logger->get_logs( $log_args );
+$logs_page = $logs_data['logs'] ?? array();
+$total_logs = $logs_data['total'] ?? 0;
+$total_pages = max( 1, ceil( $total_logs / $per_page ) );
+$log_levels = $this->logger->get_log_levels();
 ?>
 
 <div class="wrap pmpro-woo-sync-admin">
@@ -30,16 +41,21 @@ $logs_page    = array_slice( $logs, ($current_page - 1) * $per_page, $per_page )
 
     <form method="get" class="pmpro-woo-sync-logs-filter">
         <input type="hidden" name="page" value="pmpro-woo-sync-logs" />
-        <input type="text" name="s" value="<?php echo esc_attr( $_GET['s'] ?? '' ); ?>" placeholder="<?php esc_attr_e( 'Buscar en logs...', 'pmpro-woo-sync' ); ?>" />
+        <input type="text" name="s" value="<?php echo esc_attr( $search_term ); ?>" placeholder="<?php esc_attr_e( 'Buscar en logs...', 'pmpro-woo-sync' ); ?>" />
         <select name="level">
             <option value=""><?php esc_html_e( 'Todos los niveles', 'pmpro-woo-sync' ); ?></option>
             <?php foreach ( $log_levels as $level_key => $level_label ) : ?>
-                <option value="<?php echo esc_attr( $level_key ); ?>" <?php selected( $_GET['level'] ?? '', $level_key ); ?>>
+                <option value="<?php echo esc_attr( $level_key ); ?>" <?php selected( $level_filter, $level_key ); ?>>
                     <?php echo esc_html( $level_label ); ?>
                 </option>
             <?php endforeach; ?>
         </select>
         <button type="submit" class="button"><?php esc_html_e( 'Filtrar', 'pmpro-woo-sync' ); ?></button>
+        <?php if ( $search_term || $level_filter ) : ?>
+            <a href="<?php echo esc_url( admin_url( 'admin.php?page=pmpro-woo-sync-logs' ) ); ?>" class="button">
+                <?php esc_html_e( 'Limpiar Filtros', 'pmpro-woo-sync' ); ?>
+            </a>
+        <?php endif; ?>
     </form>
 
     <table class="wp-list-table widefat fixed striped pmpro-woo-sync-logs-table">
@@ -52,19 +68,15 @@ $logs_page    = array_slice( $logs, ($current_page - 1) * $per_page, $per_page )
             </tr>
         </thead>
         <tbody>
-            <?php
-            if ( empty( $logs_page ) ) :
-                ?>
+            <?php if ( empty( $logs_page ) ) : ?>
                 <tr>
                     <td colspan="4"><?php esc_html_e( 'No se encontraron logs para los filtros seleccionados.', 'pmpro-woo-sync' ); ?></td>
                 </tr>
-                <?php
-            else :
-                foreach ( $logs_page as $log ) {
-                    include __DIR__ . '/log-row.php';
-                }
-            endif;
-            ?>
+            <?php else : ?>
+                <?php foreach ( $logs_page as $log ) : ?>
+                    <?php include __DIR__ . '/log-row.php'; ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </tbody>
     </table>
 
@@ -82,17 +94,24 @@ $logs_page    = array_slice( $logs, ($current_page - 1) * $per_page, $per_page )
                 ?>
             </span>
             <span class="pagination-links">
+                <?php 
+                $base_url = add_query_arg( array(
+                    'page' => 'pmpro-woo-sync-logs',
+                    's' => $search_term,
+                    'level' => $level_filter
+                ), admin_url( 'admin.php' ) );
+                ?>
                 <?php if ( $current_page > 1 ) : ?>
-                    <a class="first-page button" href="<?php echo esc_url( add_query_arg( 'paged', 1 ) ); ?>">&laquo;</a>
-                    <a class="prev-page button" href="<?php echo esc_url( add_query_arg( 'paged', $current_page - 1 ) ); ?>">&lsaquo;</a>
+                    <a class="first-page button" href="<?php echo esc_url( add_query_arg( 'paged', 1, $base_url ) ); ?>">&laquo;</a>
+                    <a class="prev-page button" href="<?php echo esc_url( add_query_arg( 'paged', $current_page - 1, $base_url ) ); ?>">&lsaquo;</a>
                 <?php endif; ?>
                 <span class="paging-input">
                     <input class="current-page" type="text" name="paged" value="<?php echo esc_attr( $current_page ); ?>" size="2" />
                     <?php esc_html_e( 'de', 'pmpro-woo-sync' ); ?> <span class="total-pages"><?php echo esc_html( $total_pages ); ?></span>
                 </span>
                 <?php if ( $current_page < $total_pages ) : ?>
-                    <a class="next-page button" href="<?php echo esc_url( add_query_arg( 'paged', $current_page + 1 ) ); ?>">&rsaquo;</a>
-                    <a class="last-page button" href="<?php echo esc_url( add_query_arg( 'paged', $total_pages ) ); ?>">&raquo;</a>
+                    <a class="next-page button" href="<?php echo esc_url( add_query_arg( 'paged', $current_page + 1, $base_url ) ); ?>">&rsaquo;</a>
+                    <a class="last-page button" href="<?php echo esc_url( add_query_arg( 'paged', $total_pages, $base_url ) ); ?>">&raquo;</a>
                 <?php endif; ?>
             </span>
         </div>

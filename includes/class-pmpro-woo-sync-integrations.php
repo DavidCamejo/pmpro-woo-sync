@@ -36,23 +36,16 @@ class PMPro_Woo_Sync_Integrations {
             return;
         }
 
-        // Hooks principales de suscripciones
-        add_action( 'woocommerce_subscription_status_updated', array( $this, 'sync_membership_with_subscription' ), 10, 3 );
-        
-        // Hooks específicos por estado
-        add_action( 'woocommerce_subscription_status_active', array( $this, 'activate_membership' ), 10, 1 );
-        add_action( 'woocommerce_subscription_status_cancelled', array( $this, 'cancel_membership' ), 10, 1 );
-        add_action( 'woocommerce_subscription_status_expired', array( $this, 'cancel_membership' ), 10, 1 );
-        add_action( 'woocommerce_subscription_status_on-hold', array( $this, 'pause_membership' ), 10, 1 );
-        add_action( 'woocommerce_subscription_status_pending-cancel', array( $this, 'pending_cancel_membership' ), 10, 1 );
-
-        // Hooks de renovación de pagos
-        add_action( 'woocommerce_subscription_renewal_payment_complete', array( $this, 'renewal_payment_complete' ), 10, 2 );
-        add_action( 'woocommerce_subscription_renewal_payment_failed', array( $this, 'renewal_payment_failed' ), 10, 2 );
-
-        // Hooks de pedidos (para suscripciones iniciales)
+        // Hooks principales de pedidos
         add_action( 'woocommerce_order_status_completed', array( $this, 'process_completed_order' ), 10, 1 );
-        add_action( 'woocommerce_order_status_processing', array( $this, 'process_completed_order' ), 10, 1 );
+        add_action( 'woocommerce_order_status_processing', array( $this, 'process_processing_order' ), 10, 1 );
+        add_action( 'woocommerce_order_status_cancelled', array( $this, 'process_cancelled_order' ), 10, 1 );
+        add_action( 'woocommerce_order_status_failed', array( $this, 'process_failed_order' ), 10, 1 );
+        add_action( 'woocommerce_order_status_refunded', array( $this, 'process_refunded_order' ), 10, 1 );
+
+        // Hooks para pagos recurrentes de PagBank
+        add_action( 'woocommerce_pagbank_recurring_payment_complete', array( $this, 'handle_recurring_payment_complete' ), 10, 2 );
+        add_action( 'woocommerce_pagbank_recurring_payment_failed', array( $this, 'handle_recurring_payment_failed' ), 10, 2 );
 
         // Hook para cancelaciones desde PMPro
         add_action( 'pmpro_membership_post_membership_expiry', array( $this, 'handle_pmpro_expiry' ), 10, 2 );
@@ -60,149 +53,7 @@ class PMPro_Woo_Sync_Integrations {
     }
 
     /**
-     * Sincronizar membresía según cambio de estado de suscripción
-     *
-     * @param WC_Subscription $subscription
-     * @param string $new_status
-     * @param string $old_status
-     */
-    public function sync_membership_with_subscription( $subscription, $new_status, $old_status ) {
-        $user_id = $subscription->get_user_id();
-        $level_id = $this->get_linked_membership_level( $subscription );
-
-        if ( ! $user_id || ! $level_id ) {
-            $this->log( sprintf( 
-                'No se pudo sincronizar suscripción %d: usuario=%d, nivel=%d', 
-                $subscription->get_id(), 
-                $user_id, 
-                $level_id 
-            ), 'warning' );
-            return;
-        }
-
-        $this->log( sprintf(
-            'Sincronizando suscripción %d: %s -> %s (Usuario: %d, Nivel: %d)',
-            $subscription->get_id(),
-            $old_status,
-            $new_status,
-            $user_id,
-            $level_id
-        ), 'info' );
-
-        switch ( $new_status ) {
-            case 'active':
-                $this->activate_user_membership( $user_id, $level_id, $subscription );
-                break;
-            
-            case 'cancelled':
-            case 'expired':
-                $this->cancel_user_membership( $user_id, $subscription );
-                break;
-            
-            case 'on-hold':
-            case 'pending-cancel':
-                $this->pause_user_membership( $user_id, $subscription );
-                break;
-            
-            default:
-                $this->log( sprintf( 'Estado no manejado: %s para suscripción %d', $new_status, $subscription->get_id() ), 'debug' );
-        }
-
-        // Actualizar metadatos de sincronización
-        $this->update_sync_metadata( $user_id, $subscription, $new_status );
-    }
-
-    /**
-     * Activar membresía cuando suscripción se activa
-     *
-     * @param WC_Subscription $subscription
-     */
-    public function activate_membership( $subscription ) {
-        $user_id = $subscription->get_user_id();
-        $level_id = $this->get_linked_membership_level( $subscription );
-        
-        if ( $user_id && $level_id ) {
-            $this->activate_user_membership( $user_id, $level_id, $subscription );
-        }
-    }
-
-    /**
-     * Cancelar membresía cuando suscripción se cancela o expira
-     *
-     * @param WC_Subscription $subscription
-     */
-    public function cancel_membership( $subscription ) {
-        $user_id = $subscription->get_user_id();
-        if ( $user_id ) {
-            $this->cancel_user_membership( $user_id, $subscription );
-        }
-    }
-
-    /**
-     * Pausar membresía cuando suscripción está en espera
-     *
-     * @param WC_Subscription $subscription
-     */
-    public function pause_membership( $subscription ) {
-        $user_id = $subscription->get_user_id();
-        if ( $user_id ) {
-            $this->pause_user_membership( $user_id, $subscription );
-        }
-    }
-
-    /**
-     * Manejar suscripción pendiente de cancelación
-     *
-     * @param WC_Subscription $subscription
-     */
-    public function pending_cancel_membership( $subscription ) {
-        $user_id = $subscription->get_user_id();
-        if ( $user_id ) {
-            $this->log( sprintf( 'Suscripción %d marcada para cancelación (Usuario: %d)', $subscription->get_id(), $user_id ), 'info' );
-            // Por ahora, no hacemos nada hasta que se cancele definitivamente
-        }
-    }
-
-    /**
-     * Procesar pago de renovación completado
-     *
-     * @param WC_Subscription $subscription
-     * @param WC_Order $renewal_order
-     */
-    public function renewal_payment_complete( $subscription, $renewal_order ) {
-        $user_id = $subscription->get_user_id();
-        $level_id = $this->get_linked_membership_level( $subscription );
-
-        if ( $user_id && $level_id ) {
-            // Extender la membresía
-            $this->extend_membership( $user_id, $level_id, $subscription );
-            
-            // Registrar el pago en PMPro si es posible
-            $this->record_payment_in_pmpro( $user_id, $renewal_order, $subscription );
-            
-            $this->log( sprintf( 'Renovación completada para suscripción %d (Usuario: %d)', $subscription->get_id(), $user_id ), 'success' );
-        }
-    }
-
-    /**
-     * Procesar pago de renovación fallido
-     *
-     * @param WC_Subscription $subscription
-     * @param WC_Order $renewal_order
-     */
-    public function renewal_payment_failed( $subscription, $renewal_order ) {
-        $user_id = $subscription->get_user_id();
-        
-        if ( $user_id ) {
-            $this->log( sprintf( 'Pago de renovación fallido para suscripción %d (Usuario: %d)', $subscription->get_id(), $user_id ), 'warning' );
-            
-            // Aquí podrías implementar lógica de reintentos o notificaciones
-            do_action( 'pmpro_woo_sync_renewal_failed', $user_id, $subscription, $renewal_order );
-        }
-    }
-
-    /**
-     * Procesar pedido completado (para suscripciones iniciales)
+     * Procesar pedido completado
      *
      * @param int $order_id
      */
@@ -212,16 +63,132 @@ class PMPro_Woo_Sync_Integrations {
             return;
         }
 
-        // Verificar si el pedido contiene suscripciones
-        if ( function_exists( 'wcs_order_contains_subscription' ) && wcs_order_contains_subscription( $order ) ) {
-            $subscriptions = wcs_get_subscriptions_for_order( $order );
-            
-            foreach ( $subscriptions as $subscription ) {
-                if ( $subscription->get_status() === 'active' ) {
-                    $this->activate_membership( $subscription );
-                }
-            }
+        $user_id = $order->get_user_id();
+        if ( ! $user_id ) {
+            $this->log( sprintf( 'Pedido %d completado pero sin usuario asociado', $order_id ), 'warning' );
+            return;
         }
+
+        // Buscar productos con niveles de membresía asociados
+        $membership_products = $this->get_membership_products_from_order( $order );
+        
+        if ( empty( $membership_products ) ) {
+            $this->log( sprintf( 'Pedido %d completado pero sin productos de membresía', $order_id ), 'debug' );
+            return;
+        }
+
+        // Activar membresías para cada producto
+        foreach ( $membership_products as $product_data ) {
+            $this->activate_user_membership( $user_id, $product_data['level_id'], $order, $product_data );
+        }
+
+        // Actualizar metadatos de sincronización
+        $this->update_sync_metadata( $user_id, $order, 'completed' );
+
+        $this->log( sprintf( 'Pedido %d procesado exitosamente para usuario %d', $order_id, $user_id ), 'success' );
+    }
+
+    /**
+     * Procesar pedido en procesamiento
+     *
+     * @param int $order_id
+     */
+    public function process_processing_order( $order_id ) {
+        // Para algunos gateways, el estado 'processing' es suficiente para activar membresías
+        $this->process_completed_order( $order_id );
+    }
+
+    /**
+     * Procesar pedido cancelado
+     *
+     * @param int $order_id
+     */
+    public function process_cancelled_order( $order_id ) {
+        $order = wc_get_order( $order_id );
+        if ( ! $order ) {
+            return;
+        }
+
+        $user_id = $order->get_user_id();
+        if ( ! $user_id ) {
+            return;
+        }
+
+        // Cancelar membresía asociada al pedido
+        $this->cancel_membership_from_order( $user_id, $order );
+        
+        $this->log( sprintf( 'Pedido %d cancelado - membresía cancelada para usuario %d', $order_id, $user_id ), 'info' );
+    }
+
+    /**
+     * Procesar pedido fallido
+     *
+     * @param int $order_id
+     */
+    public function process_failed_order( $order_id ) {
+        // Solo procesar si está configurado para sincronizar pedidos fallidos
+        if ( ! $this->get_setting( 'sync_failed_orders', false ) ) {
+            return;
+        }
+
+        $this->process_cancelled_order( $order_id );
+    }
+
+    /**
+     * Procesar pedido reembolsado
+     *
+     * @param int $order_id
+     */
+    public function process_refunded_order( $order_id ) {
+        $this->process_cancelled_order( $order_id );
+    }
+
+    /**
+     * Manejar pago recurrente completado de PagBank
+     *
+     * @param WC_Order $order Pedido de renovación
+     * @param array $payment_data Datos del pago
+     */
+    public function handle_recurring_payment_complete( $order, $payment_data ) {
+        $user_id = $order->get_user_id();
+        if ( ! $user_id ) {
+            return;
+        }
+
+        // Buscar la membresía activa del usuario
+        $current_level = pmpro_getMembershipLevelForUser( $user_id );
+        if ( ! $current_level ) {
+            $this->log( sprintf( 'Pago recurrente completado pero usuario %d no tiene membresía activa', $user_id ), 'warning' );
+            return;
+        }
+
+        // Extender la membresía
+        $this->extend_membership( $user_id, $current_level->id, $order );
+        
+        // Registrar el pago en PMPro si está configurado
+        if ( $this->get_setting( 'record_payments_in_pmpro', true ) ) {
+            $this->record_payment_in_pmpro( $user_id, $order );
+        }
+
+        $this->log( sprintf( 'Pago recurrente completado para usuario %d - membresía extendida', $user_id ), 'success' );
+    }
+
+    /**
+     * Manejar pago recurrente fallido de PagBank
+     *
+     * @param WC_Order $order Pedido de renovación fallido
+     * @param array $payment_data Datos del pago
+     */
+    public function handle_recurring_payment_failed( $order, $payment_data ) {
+        $user_id = $order->get_user_id();
+        if ( ! $user_id ) {
+            return;
+        }
+
+        $this->log( sprintf( 'Pago recurrente fallido para usuario %d - pedido %d', $user_id, $order->get_id() ), 'warning' );
+        
+        // Aquí podrías implementar lógica de reintentos o notificaciones
+        do_action( 'pmpro_woo_sync_recurring_payment_failed', $user_id, $order, $payment_data );
     }
 
     /**
@@ -231,15 +198,10 @@ class PMPro_Woo_Sync_Integrations {
      * @param int $level_id
      */
     public function handle_pmpro_expiry( $user_id, $level_id ) {
-        // Buscar suscripciones relacionadas y cancelarlas si es necesario
-        $subscriptions = $this->get_user_subscriptions_for_level( $user_id, $level_id );
+        $this->log( sprintf( 'Membresía expirada desde PMPro: Usuario %d, Nivel %d', $user_id, $level_id ), 'info' );
         
-        foreach ( $subscriptions as $subscription ) {
-            if ( in_array( $subscription->get_status(), array( 'active', 'on-hold' ) ) ) {
-                $subscription->update_status( 'cancelled', __( 'Cancelada desde PMPro', 'pmpro-woo-sync' ) );
-                $this->log( sprintf( 'Suscripción %d cancelada desde PMPro (Usuario: %d)', $subscription->get_id(), $user_id ), 'info' );
-            }
-        }
+        // Aquí podrías cancelar pagos recurrentes en PagBank si es necesario
+        do_action( 'pmpro_woo_sync_membership_expired', $user_id, $level_id );
     }
 
     /**
@@ -250,16 +212,11 @@ class PMPro_Woo_Sync_Integrations {
      * @param int $old_level_id
      */
     public function handle_pmpro_level_change( $level_id, $user_id, $old_level_id ) {
-        // Si se cancela la membresía (level_id = 0), cancelar suscripciones
         if ( $level_id == 0 && $old_level_id > 0 ) {
-            $subscriptions = $this->get_user_subscriptions_for_level( $user_id, $old_level_id );
+            $this->log( sprintf( 'Membresía cancelada desde PMPro: Usuario %d', $user_id ), 'info' );
             
-            foreach ( $subscriptions as $subscription ) {
-                if ( in_array( $subscription->get_status(), array( 'active', 'on-hold' ) ) ) {
-                    $subscription->update_status( 'cancelled', __( 'Membresía cancelada desde PMPro', 'pmpro-woo-sync' ) );
-                    $this->log( sprintf( 'Suscripción %d cancelada por cambio de nivel PMPro (Usuario: %d)', $subscription->get_id(), $user_id ), 'info' );
-                }
-            }
+            // Aquí podrías cancelar pagos recurrentes
+            do_action( 'pmpro_woo_sync_membership_cancelled', $user_id, $old_level_id );
         }
     }
 
@@ -268,29 +225,35 @@ class PMPro_Woo_Sync_Integrations {
      *
      * @param int $user_id
      * @param int $level_id
-     * @param WC_Subscription $subscription
+     * @param WC_Order $order
+     * @param array $product_data
      */
-    private function activate_user_membership( $user_id, $level_id, $subscription ) {
-        // Calcular fecha de expiración basada en la suscripción
-        $end_date = $this->calculate_membership_end_date( $subscription );
+    private function activate_user_membership( $user_id, $level_id, $order, $product_data ) {
+        // Calcular fecha de expiración basada en el producto
+        $end_date = $this->calculate_membership_end_date( $product_data, $order );
         
         // Cambiar nivel de membresía
         $result = pmpro_changeMembershipLevel( $level_id, $user_id, 'changed', $end_date );
         
         if ( $result ) {
             $this->log( sprintf( 'Membresía activada: Usuario %d, Nivel %d, Expira: %s', $user_id, $level_id, $end_date ), 'success' );
+            
+            // Registrar el pago inicial en PMPro si está configurado
+            if ( $this->get_setting( 'record_payments_in_pmpro', true ) ) {
+                $this->record_payment_in_pmpro( $user_id, $order );
+            }
         } else {
             $this->log( sprintf( 'Error al activar membresía: Usuario %d, Nivel %d', $user_id, $level_id ), 'error' );
         }
     }
 
     /**
-     * Cancelar membresía de usuario
+     * Cancelar membresía desde pedido
      *
      * @param int $user_id
-     * @param WC_Subscription $subscription
+     * @param WC_Order $order
      */
-    private function cancel_user_membership( $user_id, $subscription ) {
+    private function cancel_membership_from_order( $user_id, $order ) {
         $result = pmpro_changeMembershipLevel( 0, $user_id, 'cancelled' );
         
         if ( $result ) {
@@ -301,35 +264,20 @@ class PMPro_Woo_Sync_Integrations {
     }
 
     /**
-     * Pausar membresía de usuario
-     *
-     * @param int $user_id
-     * @param WC_Subscription $subscription
-     */
-    private function pause_user_membership( $user_id, $subscription ) {
-        // PMPro no tiene estado "pausado", así que cancelamos temporalmente
-        // Podrías implementar lógica personalizada aquí
-        $this->cancel_user_membership( $user_id, $subscription );
-        
-        // Marcar como pausada en metadatos para posible reactivación
-        update_user_meta( $user_id, '_pmpro_woo_sync_paused', time() );
-        
-        $this->log( sprintf( 'Membresía pausada: Usuario %d', $user_id ), 'info' );
-    }
-
-    /**
      * Extender membresía existente
      *
      * @param int $user_id
      * @param int $level_id
-     * @param WC_Subscription $subscription
+     * @param WC_Order $order
      */
-    private function extend_membership( $user_id, $level_id, $subscription ) {
+    private function extend_membership( $user_id, $level_id, $order ) {
         $current_level = pmpro_getMembershipLevelForUser( $user_id );
         
         if ( $current_level && $current_level->id == $level_id ) {
             // Calcular nueva fecha de expiración
-            $new_end_date = $this->calculate_membership_end_date( $subscription );
+            $current_end = $current_level->enddate ? strtotime( $current_level->enddate ) : time();
+            $extension_period = $this->get_membership_extension_period( $level_id );
+            $new_end_date = date( 'Y-m-d H:i:s', $current_end + $extension_period );
             
             // Actualizar fecha de expiración
             global $wpdb;
@@ -342,10 +290,70 @@ class PMPro_Woo_Sync_Integrations {
             );
             
             $this->log( sprintf( 'Membresía extendida: Usuario %d, Nueva expiración: %s', $user_id, $new_end_date ), 'success' );
-        } else {
-            // Activar nueva membresía
-            $this->activate_user_membership( $user_id, $level_id, $subscription );
         }
+    }
+
+    /**
+     * Obtener productos de membresía de un pedido
+     *
+     * @param WC_Order $order
+     * @return array
+     */
+    private function get_membership_products_from_order( $order ) {
+        $membership_products = array();
+        
+        foreach ( $order->get_items() as $item ) {
+            $product = $item->get_product();
+            if ( ! $product ) {
+                continue;
+            }
+            
+            $level_id = get_post_meta( $product->get_id(), '_pmpro_membership_level', true );
+            if ( $level_id ) {
+                $membership_products[] = array(
+                    'level_id' => intval( $level_id ),
+                    'product_id' => $product->get_id(),
+                    'product' => $product,
+                    'item' => $item,
+                );
+            }
+        }
+        
+        return $membership_products;
+    }
+
+    /**
+     * Calcular fecha de expiración de membresía
+     *
+     * @param array $product_data
+     * @param WC_Order $order
+     * @return string|null
+     */
+    private function calculate_membership_end_date( $product_data, $order ) {
+        $product = $product_data['product'];
+        
+        // Buscar período de membresía en metadatos del producto
+        $membership_period = get_post_meta( $product->get_id(), '_pmpro_membership_period', true );
+        $membership_period_unit = get_post_meta( $product->get_id(), '_pmpro_membership_period_unit', true );
+        
+        if ( $membership_period && $membership_period_unit ) {
+            $end_date = strtotime( "+{$membership_period} {$membership_period_unit}" );
+            return date( 'Y-m-d H:i:s', $end_date );
+        }
+        
+        // Por defecto, 1 año de duración
+        return date( 'Y-m-d H:i:s', strtotime( '+1 year' ) );
+    }
+
+    /**
+     * Obtener período de extensión de membresía
+     *
+     * @param int $level_id
+     * @return int Segundos de extensión
+     */
+    private function get_membership_extension_period( $level_id ) {
+        // Por defecto, extender por 1 mes
+        return 30 * 24 * 60 * 60; // 30 días en segundos
     }
 
     /**
@@ -353,18 +361,22 @@ class PMPro_Woo_Sync_Integrations {
      *
      * @param int $user_id
      * @param WC_Order $order
-     * @param WC_Subscription $subscription
      */
-    private function record_payment_in_pmpro( $user_id, $order, $subscription ) {
+    private function record_payment_in_pmpro( $user_id, $order ) {
         if ( ! function_exists( 'pmpro_add_order' ) ) {
+            return;
+        }
+
+        $current_level = pmpro_getMembershipLevelForUser( $user_id );
+        if ( ! $current_level ) {
             return;
         }
 
         $pmpro_order = new MemberOrder();
         $pmpro_order->user_id = $user_id;
-        $pmpro_order->membership_id = $this->get_linked_membership_level( $subscription );
+        $pmpro_order->membership_id = $current_level->id;
         $pmpro_order->payment_transaction_id = $order->get_transaction_id();
-        $pmpro_order->subscription_transaction_id = $subscription->get_id();
+        $pmpro_order->subscription_transaction_id = $order->get_id();
         $pmpro_order->gateway = $order->get_payment_method();
         $pmpro_order->total = $order->get_total();
         $pmpro_order->status = 'success';
@@ -376,92 +388,32 @@ class PMPro_Woo_Sync_Integrations {
     }
 
     /**
-     * Obtener nivel de membresía vinculado a la suscripción
-     *
-     * @param WC_Subscription $subscription
-     * @return int|false
-     */
-    private function get_linked_membership_level( $subscription ) {
-        // Buscar en metadatos de la suscripción
-        $level_id = $subscription->get_meta( '_pmpro_linked_level_id' );
-        
-        if ( $level_id ) {
-            return intval( $level_id );
-        }
-
-        // Buscar en los productos de la suscripción
-        foreach ( $subscription->get_items() as $item ) {
-            $product = $item->get_product();
-            if ( $product ) {
-                $level_id = get_post_meta( $product->get_id(), '_pmpro_membership_level', true );
-                if ( $level_id ) {
-                    // Guardar para futuras referencias
-                    $subscription->update_meta_data( '_pmpro_linked_level_id', $level_id );
-                    $subscription->save();
-                    return intval( $level_id );
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Obtener suscripciones de usuario para un nivel específico
-     *
-     * @param int $user_id
-     * @param int $level_id
-     * @return WC_Subscription[]
-     */
-    private function get_user_subscriptions_for_level( $user_id, $level_id ) {
-        if ( ! function_exists( 'wcs_get_users_subscriptions' ) ) {
-            return array();
-        }
-
-        $subscriptions = wcs_get_users_subscriptions( $user_id );
-        $filtered = array();
-
-        foreach ( $subscriptions as $subscription ) {
-            if ( $this->get_linked_membership_level( $subscription ) == $level_id ) {
-                $filtered[] = $subscription;
-            }
-        }
-
-        return $filtered;
-    }
-
-    /**
-     * Calcular fecha de expiración de membresía basada en suscripción
-     *
-     * @param WC_Subscription $subscription
-     * @return string|null
-     */
-    private function calculate_membership_end_date( $subscription ) {
-        $next_payment = $subscription->get_date( 'next_payment' );
-        
-        if ( $next_payment ) {
-            return date( 'Y-m-d H:i:s', strtotime( $next_payment ) );
-        }
-
-        // Si no hay próximo pago, calcular basado en el período
-        $billing_period = $subscription->get_billing_period();
-        $billing_interval = $subscription->get_billing_interval();
-        
-        $end_date = strtotime( "+{$billing_interval} {$billing_period}" );
-        return date( 'Y-m-d H:i:s', $end_date );
-    }
-
-    /**
      * Actualizar metadatos de sincronización
      *
      * @param int $user_id
-     * @param WC_Subscription $subscription
+     * @param WC_Order $order
      * @param string $status
      */
-    private function update_sync_metadata( $user_id, $subscription, $status ) {
-        update_user_meta( $user_id, '_pmpro_woo_sync_subscription_id', $subscription->get_id() );
+    private function update_sync_metadata( $user_id, $order, $status ) {
+        update_user_meta( $user_id, '_pmpro_woo_sync_order_id', $order->get_id() );
         update_user_meta( $user_id, '_pmpro_woo_sync_last_sync', current_time( 'mysql' ) );
         update_user_meta( $user_id, '_pmpro_woo_sync_sync_status', $status );
+    }
+
+    /**
+     * Obtener configuración del plugin
+     *
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
+     */
+    private function get_setting( $key, $default = null ) {
+        if ( $this->plugin && method_exists( $this->plugin, 'get_setting' ) ) {
+            return $this->plugin->get_setting( $key, $default );
+        }
+        
+        $settings = get_option( 'pmpro_woo_sync_settings', array() );
+        return isset( $settings[ $key ] ) ? $settings[ $key ] : $default;
     }
 
     /**

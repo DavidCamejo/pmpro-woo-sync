@@ -45,8 +45,67 @@ class PMPro_Woo_Sync_Admin {
     }
 
     /**
-     * Inicializar hooks de administración
-     */
+    * Obtener productos de WooCommerce
+    */
+    private function get_woocommerce_products() {
+        if ( ! class_exists( 'WooCommerce' ) ) {
+            return array();
+        }
+
+        $products = array();
+        $args = array(
+            'post_type' => 'product',
+            'post_status' => 'publish',
+            'posts_per_page' => -1,
+            'meta_query' => array(
+                array(
+                    'key' => '_subscription_period',
+                    'compare' => 'EXISTS'
+                )
+            )
+        );
+
+        $query = new WP_Query( $args );
+        
+        if ( $query->have_posts() ) {
+            while ( $query->have_posts() ) {
+                $query->the_post();
+                $product_id = get_the_ID();
+                $product = wc_get_product( $product_id );
+                
+                if ( $product && ( $product->is_type( 'subscription' ) || $product->is_type( 'variable-subscription' ) ) ) {
+                    $products[ $product_id ] = get_the_title() . ' (ID: ' . $product_id . ')';
+                }
+            }
+            wp_reset_postdata();
+        }
+
+        // Si no hay productos de suscripción, obtener productos simples
+        if ( empty( $products ) ) {
+            $simple_args = array(
+                'post_type' => 'product',
+                'post_status' => 'publish',
+                'posts_per_page' => 50,
+            );
+
+            $simple_query = new WP_Query( $simple_args );
+            
+            if ( $simple_query->have_posts() ) {
+                while ( $simple_query->have_posts() ) {
+                    $simple_query->the_post();
+                    $product_id = get_the_ID();
+                    $products[ $product_id ] = get_the_title() . ' (ID: ' . $product_id . ')';
+                }
+                wp_reset_postdata();
+            }
+        }
+
+        return $products;
+    }
+
+    /**
+    * Inicializar hooks de administración
+    */
     private function init_hooks() {
         add_action( 'admin_menu', array( $this, 'add_admin_menu_pages' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
@@ -58,6 +117,83 @@ class PMPro_Woo_Sync_Admin {
         add_action( 'wp_ajax_pmpro_woo_sync_export_logs', array( $this, 'ajax_export_logs' ) );
         add_action( 'wp_ajax_pmpro_woo_sync_refresh_logs', array( $this, 'ajax_refresh_logs' ) );
         add_action( 'wp_ajax_pmpro_woo_sync_sync_user', array( $this, 'ajax_sync_user' ) );
+        
+        // Handlers adicionales para página de estado
+        add_action( 'wp_ajax_pmpro_woo_sync_diagnostic_test', array( $this, 'ajax_diagnostic_test' ) );
+        add_action( 'wp_ajax_pmpro_woo_sync_export_system_info', array( $this, 'ajax_export_system_info' ) );
+
+        // Handler para verificar debug
+        add_action( 'wp_ajax_pmpro_woo_sync_debug_status', array( $this, 'ajax_debug_status' ) );
+    }
+
+    /**
+    * AJAX: Exportar información del sistema
+    */
+    public function ajax_export_system_info() {
+        check_ajax_referer( 'pmpro_woo_sync_admin_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( -1, 403 );
+        }
+
+        $system_info = $this->get_system_information();
+        $dependency_status = $this->check_dependencies_status();
+        $sync_stats = $this->get_sync_statistics();
+
+        $export_data = array(
+            'plugin_info' => array(
+                'name' => 'PMPro-Woo-Sync',
+                'version' => PMPRO_WOO_SYNC_VERSION ?? '2.0.0',
+                'export_date' => current_time( 'Y-m-d H:i:s' ),
+            ),
+            'system_info' => $system_info,
+            'dependencies' => $dependency_status,
+            'sync_statistics' => $sync_stats,
+            'settings' => $this->settings->get_settings(),
+        );
+
+        // Crear archivo temporal
+        $upload_dir = wp_upload_dir();
+        $filename = 'pmpro-woo-sync-system-info-' . date( 'Y-m-d-H-i-s' ) . '.json';
+        $filepath = $upload_dir['path'] . '/' . $filename;
+
+        file_put_contents( $filepath, wp_json_encode( $export_data, JSON_PRETTY_PRINT ) );
+
+        // Forzar descarga
+        header( 'Content-Type: application/json' );
+        header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+        header( 'Content-Length: ' . filesize( $filepath ) );
+        
+        readfile( $filepath );
+        unlink( $filepath ); // Eliminar archivo temporal
+        
+        wp_die();
+    }
+
+    /**
+    * AJAX: Verificar estado del modo debug
+    */
+    public function ajax_debug_status() {
+        check_ajax_referer( 'pmpro_woo_sync_admin_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( -1, 403 );
+        }
+
+        $debug_info = array(
+            'debug_enabled' => $this->settings->is_debug_enabled(),
+            'logging_enabled' => $this->settings->is_logging_enabled(),
+            'log_level' => $this->settings->get_log_level(),
+            'settings_raw' => $this->settings->get_settings(),
+        );
+
+        // Probar escritura de log debug
+        $this->logger->debug( 'Prueba de log debug desde verificación de estado' );
+
+        wp_send_json_success( array(
+            'message' => __( 'Estado del modo debug verificado', 'pmpro-woo-sync' ),
+            'debug_info' => $debug_info
+        ));
     }
 
     /**
@@ -381,7 +517,7 @@ class PMPro_Woo_Sync_Admin {
             <div class="pmpro-woo-sync-tools-grid">
                 <!-- Herramientas de Sincronización -->
                 <div class="tool-section">
-                    <h3><?php _e( 'Herramientas de Sincronización', 'pmpro-woo-sync' ); ?></h3>
+                    <h3 style="padding-left:20px;"><?php _e( 'Herramientas de Sincronización', 'pmpro-woo-sync' ); ?></h3>
                     
                     <div class="tool-item">
                         <h4><?php _e( 'Sincronización Manual', 'pmpro-woo-sync' ); ?></h4>
@@ -421,7 +557,7 @@ class PMPro_Woo_Sync_Admin {
 
                 <!-- Herramientas de Mantenimiento -->
                 <div class="tool-section">
-                    <h3><?php _e( 'Herramientas de Mantenimiento', 'pmpro-woo-sync' ); ?></h3>
+                    <h3 style="padding-left:20px;"><?php _e( 'Herramientas de Mantenimiento', 'pmpro-woo-sync' ); ?></h3>
                     
                     <div class="tool-item">
                         <h4><?php _e( 'Limpiar Logs Antiguos', 'pmpro-woo-sync' ); ?></h4>
@@ -445,124 +581,6 @@ class PMPro_Woo_Sync_Admin {
                                 <?php _e( 'Reiniciar Configuraciones', 'pmpro-woo-sync' ); ?>
                             </button>
                         </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <?php
-    }
-
-    /**
-     * Renderizar página de estado del sistema
-     */
-    public function display_status_page() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( __( 'No tienes permisos suficientes para acceder a esta página.', 'pmpro-woo-sync' ) );
-        }
-
-        $system_info = $this->get_system_information();
-        $dependency_status = $this->check_dependencies_status();
-        $sync_stats = $this->get_sync_statistics();
-
-        ?>
-        <div class="wrap">
-            <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
-
-            <!-- Estado de Dependencias -->
-            <div class="pmpro-woo-sync-status-section">
-                <h3><?php _e( 'Estado de Dependencias', 'pmpro-woo-sync' ); ?></h3>
-                <table class="wp-list-table widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th><?php _e( 'Componente', 'pmpro-woo-sync' ); ?></th>
-                            <th><?php _e( 'Estado', 'pmpro-woo-sync' ); ?></th>
-                            <th><?php _e( 'Versión', 'pmpro-woo-sync' ); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><?php _e( 'Paid Memberships Pro', 'pmpro-woo-sync' ); ?></td>
-                            <td>
-                                <span class="status-indicator <?php echo $dependency_status['pmpro_active'] ? 'active' : 'inactive'; ?>">
-                                    <?php echo $dependency_status['pmpro_active'] ? __( 'Activo', 'pmpro-woo-sync' ) : __( 'Inactivo', 'pmpro-woo-sync' ); ?>
-                                </span>
-                            </td>
-                            <td><?php echo $dependency_status['pmpro_active'] ? esc_html( $dependency_status['pmpro_version'] ) : '—'; ?></td>
-                        </tr>
-                        <tr>
-                            <td><?php _e( 'WooCommerce', 'pmpro-woo-sync' ); ?></td>
-                            <td>
-                                <span class="status-indicator <?php echo $dependency_status['woocommerce_active'] ? 'active' : 'inactive'; ?>">
-                                    <?php echo $dependency_status['woocommerce_active'] ? __( 'Activo', 'pmpro-woo-sync' ) : __( 'Inactivo', 'pmpro-woo-sync' ); ?>
-                                </span>
-                            </td>
-                            <td><?php echo $dependency_status['woocommerce_active'] ? esc_html( $dependency_status['woocommerce_version'] ) : '—'; ?></td>
-                        </tr>
-                        <tr>
-                            <td><?php _e( 'WooCommerce Subscriptions', 'pmpro-woo-sync' ); ?></td>
-                            <td>
-                                <span class="status-indicator <?php echo $dependency_status['wc_subscriptions_active'] ? 'active' : 'warning'; ?>">
-                                    <?php echo $dependency_status['wc_subscriptions_active'] ? __( 'Activo', 'pmpro-woo-sync' ) : __( 'Recomendado', 'pmpro-woo-sync' ); ?>
-                                </span>
-                            </td>
-                            <td><?php echo $dependency_status['wc_subscriptions_active'] ? esc_html( $dependency_status['wc_subscriptions_version'] ) : '—'; ?></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Información del Sistema -->
-            <div class="pmpro-woo-sync-status-section">
-                <h3><?php _e( 'Información del Sistema', 'pmpro-woo-sync' ); ?></h3>
-                <table class="wp-list-table widefat fixed striped">
-                    <tbody>
-                        <tr>
-                            <td><?php _e( 'Versión de WordPress', 'pmpro-woo-sync' ); ?></td>
-                            <td><?php echo esc_html( $system_info['wordpress_version'] ); ?></td>
-                        </tr>
-                        <tr>
-                            <td><?php _e( 'Versión de PHP', 'pmpro-woo-sync' ); ?></td>
-                            <td><?php echo esc_html( $system_info['php_version'] ); ?></td>
-                        </tr>
-                        <tr>
-                            <td><?php _e( 'Versión de MySQL', 'pmpro-woo-sync' ); ?></td>
-                            <td><?php echo esc_html( $system_info['mysql_version'] ); ?></td>
-                        </tr>
-                        <tr>
-                            <td><?php _e( 'Versión del Plugin', 'pmpro-woo-sync' ); ?></td>
-                            <td><?php echo esc_html( $system_info['plugin_version'] ); ?></td>
-                        </tr>
-                        <tr>
-                            <td><?php _e( 'Límite de Memoria', 'pmpro-woo-sync' ); ?></td>
-                            <td><?php echo esc_html( $system_info['memory_limit'] ); ?></td>
-                        </tr>
-                        <tr>
-                            <td><?php _e( 'Tiempo Máximo de Ejecución', 'pmpro-woo-sync' ); ?></td>
-                            <td><?php echo esc_html( $system_info['max_execution_time'] ); ?> segundos</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Estadísticas de Sincronización -->
-            <div class="pmpro-woo-sync-status-section">
-                <h3><?php _e( 'Estadísticas de Sincronización', 'pmpro-woo-sync' ); ?></h3>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-number"><?php echo esc_html( $sync_stats['total_synced_users'] ); ?></span>
-                        <span class="stat-label"><?php _e( 'Usuarios Sincronizados', 'pmpro-woo-sync' ); ?></span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number"><?php echo esc_html( $sync_stats['active_subscriptions'] ); ?></span>
-                        <span class="stat-label"><?php _e( 'Suscripciones Activas', 'pmpro-woo-sync' ); ?></span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number"><?php echo esc_html( $sync_stats['last_sync'] ); ?></span>
-                        <span class="stat-label"><?php _e( 'Última Sincronización', 'pmpro-woo-sync' ); ?></span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number"><?php echo esc_html( $sync_stats['sync_errors'] ); ?></span>
-                        <span class="stat-label"><?php _e( 'Errores (24h)', 'pmpro-woo-sync' ); ?></span>
                     </div>
                 </div>
             </div>
@@ -982,13 +1000,14 @@ class PMPro_Woo_Sync_Admin {
     }
 
     /**
-     * Verificar estado de dependencias
-     */
+    * Verificar estado de dependencias
+    */
     private function check_dependencies_status() {
         $status = array(
-            'pmpro_active'      => function_exists( 'pmpro_getLevel' ),
+            'pmpro_active'    => function_exists( 'pmpro_getLevel' ),
             'woocommerce_active' => class_exists( 'WooCommerce' ),
-            'wc_subscriptions_active' => class_exists( 'WC_Subscriptions' ),
+            'pmpro_woocommerce_active' => $this->is_pmpro_woocommerce_active(),
+            'pagbank_active' => $this->is_pagbank_active(),
         );
 
         // Obtener versiones si están activos
@@ -1000,11 +1019,276 @@ class PMPro_Woo_Sync_Admin {
             $status['woocommerce_version'] = WC_VERSION;
         }
 
-        if ( $status['wc_subscriptions_active'] && class_exists( 'WC_Subscriptions' ) ) {
-            $status['wc_subscriptions_version'] = WC_Subscriptions::$version ?? 'N/A';
+        // Verificar versión de PMPro WooCommerce
+        if ( $status['pmpro_woocommerce_active'] ) {
+            $status['pmpro_woocommerce_version'] = $this->get_pmpro_woocommerce_version();
+        }
+
+        // Verificar versión de PagBank
+        if ( $status['pagbank_active'] ) {
+            $status['pagbank_version'] = $this->get_pagbank_version();
         }
 
         return $status;
+    }
+
+    /**
+    * Verificar si PMPro WooCommerce está activo
+    */
+    private function is_pmpro_woocommerce_active() {
+        // Verificar si el plugin está activo
+        if ( ! function_exists( 'is_plugin_active' ) ) {
+            include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+        }
+
+        // Posibles paths del plugin
+        $possible_paths = array(
+            'pmpro-woocommerce/pmpro-woocommerce.php',
+            'paid-memberships-pro-woocommerce/pmpro-woocommerce.php',
+        );
+
+        foreach ( $possible_paths as $path ) {
+            if ( is_plugin_active( $path ) ) {
+                return true;
+            }
+        }
+
+        // Verificar por funciones específicas como fallback
+        return function_exists( 'pmprowoo_getMembershipLevelFromProduct' ) || 
+               function_exists( 'pmprowoo_init' ) ||
+               defined( 'PMPROWOO_VERSION' ) ||
+               class_exists( 'PMProWoo' );
+    }
+
+    /**
+    * Verificar si PagBank está activo
+    */
+    private function is_pagbank_active() {
+        // Verificar si el plugin está activo
+        if ( ! function_exists( 'is_plugin_active' ) ) {
+            include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+        }
+
+        // Posibles paths del plugin PagBank
+        $possible_paths = array(
+            'pagbank-connect/rm-pagbank.php',
+            'pagbank-for-woocommerce/pagbank-for-woocommerce.php',
+            'woocommerce-pagseguro/woocommerce-pagseguro.php',
+            'pagseguro-for-woocommerce/pagseguro-for-woocommerce.php',
+        );
+
+        foreach ( $possible_paths as $path ) {
+            if ( is_plugin_active( $path ) ) {
+                return true;
+            }
+        }
+
+        // Verificar por clases/funciones específicas como fallback
+        return class_exists( 'RM_PagBank' ) || 
+               class_exists( 'WC_PagSeguro' ) ||
+               class_exists( 'WC_PagBank_Gateway' ) ||
+               function_exists( 'wc_pagseguro_init' ) ||
+               defined( 'WC_PAGSEGURO_VERSION' ) ||
+               defined( 'RM_PAGBANK_VERSION' );
+    }
+
+    /**
+    * Obtener versión de PMPro WooCommerce
+    */
+    private function get_pmpro_woocommerce_version() {
+        // Verificar constante de versión
+        if ( defined( 'PMPROWOO_VERSION' ) ) {
+            return PMPROWOO_VERSION;
+        }
+
+        // Verificar en los datos del plugin
+        if ( ! function_exists( 'get_plugin_data' ) ) {
+            require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+        }
+
+        $possible_files = array(
+            WP_PLUGIN_DIR . '/pmpro-woocommerce/pmpro-woocommerce.php',
+            WP_PLUGIN_DIR . '/paid-memberships-pro-woocommerce/pmpro-woocommerce.php',
+        );
+
+        foreach ( $possible_files as $plugin_file ) {
+            if ( file_exists( $plugin_file ) ) {
+                $plugin_data = get_plugin_data( $plugin_file );
+                if ( ! empty( $plugin_data['Version'] ) ) {
+                    return $plugin_data['Version'];
+                }
+            }
+        }
+
+        return 'Unknown';
+    }
+
+    /**
+    * Obtener versión de PagBank
+    */
+    private function get_pagbank_version() {
+        // Verificar constantes de versión
+        if ( defined( 'RM_PAGBANK_VERSION' ) ) {
+            return RM_PAGBANK_VERSION;
+        }
+        if ( defined( 'WC_PAGSEGURO_VERSION' ) ) {
+            return WC_PAGSEGURO_VERSION;
+        }
+
+        // Verificar en los datos del plugin
+        if ( ! function_exists( 'get_plugin_data' ) ) {
+            require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+        }
+
+        $possible_files = array(
+            WP_PLUGIN_DIR . '/pagbank-connect/rm-pagbank.php',
+            WP_PLUGIN_DIR . '/pagbank-for-woocommerce/pagbank-for-woocommerce.php',
+            WP_PLUGIN_DIR . '/woocommerce-pagseguro/woocommerce-pagseguro.php',
+            WP_PLUGIN_DIR . '/pagseguro-for-woocommerce/pagseguro-for-woocommerce.php',
+        );
+
+        foreach ( $possible_files as $plugin_file ) {
+            if ( file_exists( $plugin_file ) ) {
+                $plugin_data = get_plugin_data( $plugin_file );
+                if ( ! empty( $plugin_data['Version'] ) ) {
+                    return $plugin_data['Version'];
+                }
+            }
+        }
+
+        return 'Unknown';
+    }
+
+    /**
+    * Obtener información detallada de plugins instalados
+    */
+    private function get_installed_plugins_info() {
+        if ( ! function_exists( 'get_plugins' ) ) {
+            require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+        }
+
+        $all_plugins = get_plugins();
+        $active_plugins = get_option( 'active_plugins', array() );
+        
+        $plugins_info = array();
+
+        foreach ( $all_plugins as $plugin_path => $plugin_data ) {
+            $plugin_slug = dirname( $plugin_path );
+            
+            // Verificar si es uno de nuestros plugins de interés
+            if ( in_array( $plugin_slug, array( 'pmpro-woocommerce', 'paid-memberships-pro-woocommerce', 'pagbank-connect', 'pagbank-for-woocommerce', 'woocommerce-pagseguro' ) ) ) {
+                $plugins_info[ $plugin_slug ] = array(
+                    'name' => $plugin_data['Name'],
+                    'version' => $plugin_data['Version'],
+                    'active' => in_array( $plugin_path, $active_plugins ),
+                    'path' => $plugin_path,
+                );
+            }
+        }
+
+        return $plugins_info;
+    }
+
+    /**
+    * AJAX: Ejecutar prueba de diagnóstico
+    */
+    public function ajax_diagnostic_test() {
+        check_ajax_referer( 'pmpro_woo_sync_admin_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( -1, 403 );
+        }
+
+        // Ejecutar pruebas de diagnóstico
+        $diagnostic_results = array();
+
+        // Verificar conexión a base de datos
+        global $wpdb;
+        $diagnostic_results['database'] = $wpdb->get_var( "SELECT 1" ) === '1';
+
+        // Verificar dependencias principales
+        $diagnostic_results['pmpro'] = function_exists( 'pmpro_getLevel' );
+        $diagnostic_results['woocommerce'] = class_exists( 'WooCommerce' );
+
+        // Verificar dependencias opcionales con información detallada
+        $diagnostic_results['pmpro_woocommerce'] = $this->is_pmpro_woocommerce_active();
+        $diagnostic_results['pagbank'] = $this->is_pagbank_active();
+
+        // Obtener información de plugins instalados
+        $plugins_info = $this->get_installed_plugins_info();
+        $diagnostic_results['installed_plugins'] = $plugins_info;
+
+        // Verificar configuración
+        $diagnostic_results['settings'] = $this->settings->is_sync_enabled();
+
+        // Verificar permisos de archivos
+        $log_dir = wp_upload_dir()['basedir'] . '/pmpro-woo-sync-logs/';
+        $diagnostic_results['file_permissions'] = is_writable( $log_dir ) || wp_mkdir_p( $log_dir );
+
+        // Verificar tabla de logs
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'pmpro_woo_sync_logs';
+        $diagnostic_results['logs_table'] = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table_name ) ) === $table_name;
+
+        // Log del diagnóstico
+        $this->logger->info( 'Prueba de diagnóstico ejecutada', array(
+            'results' => $diagnostic_results
+        ));
+
+        // Crear mensaje detallado
+        $message_parts = array();
+        $message_parts[] = __( 'Diagnóstico completado:', 'pmpro-woo-sync' );
+        $message_parts[] = sprintf( __( '• Base de datos: %s', 'pmpro-woo-sync' ), $diagnostic_results['database'] ? '✓' : '✗' );
+        $message_parts[] = sprintf( __( '• PMPro: %s', 'pmpro-woo-sync' ), $diagnostic_results['pmpro'] ? '✓' : '✗' );
+        $message_parts[] = sprintf( __( '• WooCommerce: %s', 'pmpro-woo-sync' ), $diagnostic_results['woocommerce'] ? '✓' : '✗' );
+        $message_parts[] = sprintf( __( '• PMPro-WooCommerce: %s', 'pmpro-woo-sync' ), $diagnostic_results['pmpro_woocommerce'] ? '✓' : '✗' );
+        $message_parts[] = sprintf( __( '• PagBank: %s', 'pmpro-woo-sync' ), $diagnostic_results['pagbank'] ? '✓' : '✗' );
+        $message_parts[] = sprintf( __( '• Tabla de logs: %s', 'pmpro-woo-sync' ), $diagnostic_results['logs_table'] ? '✓' : '✗' );
+
+        if ( ! empty( $plugins_info ) ) {
+            $message_parts[] = __( '• Plugins relacionados encontrados:', 'pmpro-woo-sync' );
+            foreach ( $plugins_info as $slug => $info ) {
+                $status = $info['active'] ? '✓ Activo' : '○ Instalado';
+                $message_parts[] = sprintf( '  - %s v%s (%s)', $info['name'], $info['version'], $status );
+            }
+        }
+
+        wp_send_json_success( array(
+            'message' => implode( "\n", $message_parts ),
+            'results' => $diagnostic_results
+        ));
+    }
+
+    /**
+    * Obtener gateways de pago activos
+    */
+    private function get_active_payment_gateways() {
+        if ( ! class_exists( 'WooCommerce' ) ) {
+            return array();
+        }
+
+        $gateways = array();
+        $available_gateways = WC()->payment_gateways->get_available_payment_gateways();
+
+        foreach ( $available_gateways as $gateway ) {
+            if ( $gateway->enabled === 'yes' ) {
+                $gateways[] = $gateway->get_method_title();
+            }
+        }
+
+        return $gateways;
+    }
+
+    /**
+    * Renderizar página de estado del sistema
+    */
+    public function display_status_page() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( __( 'No tienes permisos suficientes para acceder a esta página.', 'pmpro-woo-sync' ) );
+        }
+
+        // Incluir el partial que contiene toda la interfaz de estado
+        include_once plugin_dir_path( __FILE__ ) . 'partials/admin-display-status.php';
     }
 
     /**
@@ -1015,20 +1299,23 @@ class PMPro_Woo_Sync_Admin {
 
         $stats = array(
             'total_synced_users' => 0,
-            'active_subscriptions' => 0,
+            'active_orders' => 0,
             'last_sync' => __( 'Nunca', 'pmpro-woo-sync' ),
             'sync_errors' => 0,
         );
 
         // Contar usuarios con metadatos de sincronización
         $stats['total_synced_users'] = $wpdb->get_var(
-            "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->usermeta} WHERE meta_key = '_pmpro_woo_sync_subscription_id'"
+            "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->usermeta} WHERE meta_key = '_pmpro_woo_sync_order_id'"
         );
 
-        // Contar suscripciones activas si WooCommerce está disponible
-        if ( class_exists( 'WooCommerce' ) && function_exists( 'wcs_get_subscriptions' ) ) {
-            $active_subscriptions = wcs_get_subscriptions( array( 'subscription_status' => 'active' ) );
-            $stats['active_subscriptions'] = count( $active_subscriptions );
+        // Contar pedidos activos si WooCommerce está disponible
+        if ( class_exists( 'WooCommerce' ) ) {
+            $active_orders = wc_get_orders( array( 
+                'status' => array( 'completed', 'processing' ),
+                'limit' => -1 
+            ) );
+            $stats['active_orders'] = count( $active_orders );
         }
 
         // Obtener última sincronización
@@ -1039,10 +1326,11 @@ class PMPro_Woo_Sync_Admin {
             $stats['last_sync'] = human_time_diff( strtotime( $last_sync ), current_time( 'timestamp' ) ) . ' ' . __( 'atrás', 'pmpro-woo-sync' );
         }
 
-        // Contar errores en las últimas 24 horas
-        if ( $this->logger->table_exists() ) {
+        // Contar errores en las últimas 24 horas - Check if table exists first
+        $table_name = $wpdb->prefix . 'pmpro_woo_sync_logs';
+        if ( $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table_name ) ) === $table_name ) {
             $stats['sync_errors'] = $wpdb->get_var( $wpdb->prepare(
-                "SELECT COUNT(*) FROM {$wpdb->prefix}pmpro_woo_sync_logs WHERE level = 'error' AND timestamp >= %s",
+                "SELECT COUNT(*) FROM {$table_name} WHERE level = 'error' AND timestamp >= %s",
                 gmdate( 'Y-m-d H:i:s', strtotime( '-24 hours' ) )
             ));
         }

@@ -245,11 +245,17 @@ class PMPro_Woo_Sync_Logger {
     private function log_to_database( $level, $message, $context ) {
         global $wpdb;
 
+        // Ensure context can be safely encoded
+        $context_json = wp_json_encode( $context, JSON_UNESCAPED_UNICODE );
+        if ( false === $context_json ) {
+            $context_json = wp_json_encode( array( 'error' => 'Failed to encode context data' ) );
+        }
+
         $data = array(
             'timestamp' => current_time( 'mysql' ),
             'level'     => $level,
             'message'   => $message,
-            'context'   => wp_json_encode( $context, JSON_UNESCAPED_UNICODE ),
+            'context'   => $context_json,
             'user_id'   => get_current_user_id(),
         );
 

@@ -182,18 +182,20 @@ class PMPro_Woo_Sync {
      * Hook de activación del plugin
      */
     public static function activate() {
-        // Crear tablas si es necesario
+        // Create tables if necessary
         self::create_tables();
         
-        // Configuraciones por defecto
+        // Set default configurations
         self::set_default_options();
         
-        // Limpiar cache
+        // Clear cache
         flush_rewrite_rules();
         
-        // Log de activación
+        // Log activation
         if ( class_exists( 'PMPro_Woo_Sync_Logger' ) ) {
-            PMPro_Woo_Sync_Logger::log( 'Plugin activado correctamente', 'info' );
+            $logger = PMPro_Woo_Sync_Logger::get_instance();
+            $logger->create_log_table(); // Ensure table exists
+            $logger->info( 'Plugin activated successfully' );
         }
     }
 
@@ -214,8 +216,11 @@ class PMPro_Woo_Sync {
      * Crear tablas necesarias
      */
     private static function create_tables() {
-        // Implementar si necesitas tablas personalizadas
-        // Por ahora, el plugin usa las tablas estándar de WordPress
+        // Create the logs table
+        if ( class_exists( 'PMPro_Woo_Sync_Logger' ) ) {
+            $logger = PMPro_Woo_Sync_Logger::get_instance();
+            $logger->create_log_table();
+        }
     }
 
     /**
