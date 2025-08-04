@@ -596,7 +596,7 @@ npm run build
 
 ### v2.0.0 - 2025-08-01
 
-#### 🔄 BREAKING CHANGES
+#### ✅ BREAKING CHANGES
 
 * **Eliminada dependencia** de WooCommerce Subscriptions
 * **Refactorización completa** para trabajar directamente con WooCommerce
