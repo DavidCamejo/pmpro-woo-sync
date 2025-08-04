@@ -17,19 +17,20 @@ $level_filter = sanitize_text_field( $_GET['level'] ?? '' );
 $current_page = max( 1, intval( $_GET['paged'] ?? 1 ) );
 $per_page = 50;
 
-// Obtener logs con filtros y paginación aplicados
-$log_args = array(
-    'search' => $search_term,
-    'level' => $level_filter,
-    'page' => $current_page,
-    'per_page' => $per_page
-);
+$offset = ( $current_page - 1 ) * $per_page;
 
-$logs_data = $this->logger->get_logs( $log_args );
-$logs_page = $logs_data['logs'] ?? array();
-$total_logs = $logs_data['total'] ?? 0;
+// USAR API CORRECTA con parámetros separados (como en ajax_refresh_logs)
+$logs_page = $this->logger->get_logs( $per_page, $offset, $level_filter, $search_term );
+$total_logs = $this->logger->get_total_logs( $level_filter, $search_term );
 $total_pages = max( 1, ceil( $total_logs / $per_page ) );
-$log_levels = $this->logger->get_log_levels();
+
+// DEFINIR NIVELES ESTÁTICAMENTE (en lugar del método inexistente)
+$log_levels = array(
+    'error' => __( 'Error', 'pmpro-woo-sync' ),
+    'warning' => __( 'Advertencia', 'pmpro-woo-sync' ),
+    'info' => __( 'Información', 'pmpro-woo-sync' ),
+    'debug' => __( 'Debug', 'pmpro-woo-sync' ),
+);
 ?>
 
 <div class="wrap pmpro-woo-sync-admin">

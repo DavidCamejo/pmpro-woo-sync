@@ -66,7 +66,7 @@ $sync_stats = $this->get_sync_statistics();
                     </td>
                 </tr>
                 <tr>
-                    <td><strong><?php esc_html_e( 'PMPro WooCommerce', 'pmpro-woo-sync' ); ?></strong></td>
+                    <td><strong><?php esc_html_e( 'PMPro - WooCommerce', 'pmpro-woo-sync' ); ?></strong></td>
                     <td>
                         <span class="status-indicator <?php echo $dependency_status['pmpro_woocommerce_active'] ? 'active' : 'warning'; ?>">
                             <?php echo $dependency_status['pmpro_woocommerce_active'] ? __( 'Activo', 'pmpro-woo-sync' ) : __( 'Inactivo', 'pmpro-woo-sync' ); ?>
@@ -78,12 +78,12 @@ $sync_stats = $this->get_sync_statistics();
                             <span class="warning"><?php esc_html_e( 'Recomendado para integración completa', 'pmpro-woo-sync' ); ?></span>
                             <br><small><a href="https://github.com/strangerstudios/pmpro-woocommerce" target="_blank"><?php esc_html_e( 'Descargar Plugin', 'pmpro-woo-sync' ); ?></a></small>
                         <?php else : ?>
-                            <span class="success"><?php esc_html_e( 'Integración mejorada disponible', 'pmpro-woo-sync' ); ?></span>
+                            <span class="success"><?php esc_html_e( 'Integración disponible', 'pmpro-woo-sync' ); ?></span>
                         <?php endif; ?>
                     </td>
                 </tr>
                 <tr>
-                    <td><strong><?php esc_html_e( 'PagBank para WooCommerce', 'pmpro-woo-sync' ); ?></strong></td>
+                    <td><strong><?php esc_html_e( 'PagBank Connect', 'pmpro-woo-sync' ); ?></strong></td>
                     <td>
                         <span class="status-indicator <?php echo $dependency_status['pagbank_active'] ? 'active' : 'warning'; ?>">
                             <?php echo $dependency_status['pagbank_active'] ? __( 'Activo', 'pmpro-woo-sync' ) : __( 'Inactivo', 'pmpro-woo-sync' ); ?>

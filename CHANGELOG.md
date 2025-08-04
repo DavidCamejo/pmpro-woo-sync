@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.1] - 2025-08-04
+
+### 🐛 **Bug Fixes:**
+
+1. **Eliminada duplicación de menús** en el panel de administración
+2. **Corregido error fatal** en template de logs (`get_log_levels()` método inexistente)
+3. **Solucionada incompatibilidad de datos** entre templates y clase Logger (arrays vs objetos)
+4. **Corregida API del Logger** para usar parámetros separados en lugar de arrays
+
+### ✅ Improved:
+
+1. **Mejor separación** entre lógica y presentación en templates
+2. **Estructura más consistente** en páginas de administración
+
+### 🔧 **Mejoras técnicas:**
+
+- ✅ Singleton pattern correctamente implementado
+- ✅ Separación clara entre lógica y presentación
+- ✅ Templates independientes para cada página admin
+- ✅ API consistente entre componentes
+
 ## [2.0.0] - 2025-08-01
 
 ### 🚀 Refactorización mayor y simplificación de arquitectura
@@ -18,19 +39,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   El plugin ya no requiere ni detecta WooCommerce Subscriptions, ya que PagBank-WooCommerce gestiona las suscripciones y pagos recurrentes de forma nativa.
 
 - **Reescritura completa de la estructura de clases principales:**  
+  
   - `class-pmpro-woo-sync.php`
+  
   - `class-pmpro-woo-sync-integrations.php`
+  
   - `class-pmpro-woo-sync-settings.php`
+  
   - `class-pmpro-woo-sync-logger.php`
+  
   - `class-pmpro-woo-sync-admin.php`
     
     Todas las clases han sido optimizadas, documentadas y desacopladas de gateways o APIs externas.
 
 - **Refactorización de todos los archivos de la interfaz de administración:**  
+  
   - Eliminadas secciones, textos y opciones relacionadas con PagBank y WooCommerce Subscriptions.
   - Interfaz más clara, moderna y centrada en la sincronización entre PMPro y WooCommerce.
 
 - **Nuevas herramientas de administración y mantenimiento:**  
+  
   - Sincronización manual y masiva de usuarios.
   - Reparación de enlaces de suscripciones.
   - Limpieza de metadatos huérfanos y logs antiguos.
@@ -38,22 +66,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Reinicio seguro de configuraciones.
 
 - **Sistema de logs mejorado:**  
+  
   - Filtros por nivel y búsqueda por palabra clave.
   - Visualización clara y paginada.
   - Contexto de logs en formato JSON legible.
 
 - **Mejoras de seguridad y experiencia de usuario:**  
+  
   - Nonces en todos los formularios.
   - Confirmaciones para acciones peligrosas.
   - Validaciones y mensajes claros.
 
 - **Internacionalización y documentación:**  
+  
   - Todos los textos preparados para traducción.
   - Comentarios y docblocks actualizados.
 
 ---
 
 **Notas importantes:**
+
 - Esta versión es incompatible con integraciones directas a PagBank API y ya no requiere WooCommerce Subscriptions.
 - Se recomienda revisar la configuración tras actualizar y realizar pruebas de sincronización.
 
@@ -64,18 +96,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### **Sistema de Administración Completo**
+
 - **Panel de Configuraciones Avanzado:** Interfaz centralizada con validación en tiempo real, indicadores visuales de estado y auto-guardado de borradores cada 30 segundos.
 - **Visualizador de Logs Profesional:** Dashboard con estadísticas en tiempo real, filtros avanzados, búsqueda instantánea, auto-refresh cada 30 segundos y exportación JSON.
 - **Página de Herramientas Integrada:** Incluye sincronización masiva, reparación de enlaces, verificación de gateways, debug específico por usuario y limpieza de metadatos.
 - **Dashboard de Estado del Sistema:** Monitoreo en vivo de dependencias, información del servidor, estado de gateways y estadísticas de logs.
 
 #### **Interfaz de Usuario Moderna**
+
 - **Diseño Responsive Completo:** Optimizado para móviles, tablets y escritorio con breakpoints adaptativos.
 - **Componentes Visuales Avanzados:** Indicadores de estado con animaciones, loading states, transiciones suaves y feedback inmediato.
 - **Sistema de Notificaciones AJAX:** Mensajes no intrusivos con auto-hide configurable y posicionamiento inteligente.
 - **Validación Dual:** Client-side para UX inmediata y server-side para seguridad robusta.
 
 #### **Sistema de Logging Avanzado**
+
 - **5 Niveles de Logging:** `success`, `info`, `warning`, `error`, `debug` con colores distintivos y iconografía.
 - **Base de Datos Optimizada:** Tabla dedicada con índices para consultas rápidas y escalabilidad.
 - **Características Avanzadas:**
@@ -87,6 +122,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Estadísticas en tiempo real (total, últimas 24h, por nivel)
 
 #### **Herramientas de Diagnóstico Profesionales**
+
 - **Debug Específico por Usuario:** Función `pmpro_woo_sync_debug_info($user_id)` que retorna:
   - Información actual de membresía
   - Historial de órdenes recientes
@@ -98,6 +134,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Limpieza de Metadatos:** Eliminación segura de datos huérfanos del plugin
 
 #### **Cancelación Bidireccional Robusta**
+
 - **Propagación PMPro → Gateway:** Las cancelaciones iniciadas en PMPro se propagan automáticamente a gateways externos
 - **Integración PagBank Completa:** Soporte nativo para API de PagBank con:
   - Cancelación automática de suscripciones
@@ -106,6 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Gateway Manager Modular:** Arquitectura extensible para agregar soporte a nuevos gateways
 
 #### **Características Técnicas Avanzadas**
+
 - **Autoloader Optimizado:** Mapeo directo de clases para mejor performance y tiempo de carga reducido
 - **Verificación de Dependencias:** Sistema robusto que verifica versiones mínimas de PHP, WordPress, WooCommerce y PMPro
 - **Seguridad Reforzada:**
@@ -121,6 +159,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Auto-pausa de refresh cuando la página no está visible
 
 #### **Sistema AJAX Completo**
+
 - **Endpoints Implementados:**
   - `pmpro_woo_sync_clear_logs`: Limpieza completa de logs
   - `pmpro_woo_sync_test_connection`: Prueba de conectividad con gateways
@@ -130,6 +169,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **JavaScript Modular:** Objeto global `pmproWooSync` con funciones reutilizables y manejo de errores
 
 #### **Estilos CSS Profesionales**
+
 - **Sistema de Grid Responsivo:** Layout adaptativo para todas las páginas del plugin
 - **Componentes Reutilizables:** Clases modulares para indicadores, botones, formularios y modales
 - **Animaciones Suaves:** Transiciones CSS3 para estados de carga, hover y focus
@@ -138,16 +178,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 #### **Arquitectura Completa**
+
 - **Migración a OOP:** Refactorización completa de funciones sueltas a clases organizadas con principios SOLID
 - **Estructura Modular:** Separación clara de responsabilidades entre core, admin, integraciones y gateways
 - **API de Configuraciones:** Migración de opciones hardcodeadas a WordPress Settings API con validación
 
 #### **Gestión de Configuraciones**
+
 - **Panel Centralizado:** Todas las configuraciones ahora se gestionan desde la interfaz de administración
 - **Valores Predeterminados:** Sistema robusto de fallbacks para configuraciones no definidas
 - **Validación Mejorada:** Checks en tiempo real de formato, rangos y dependencias
 
 #### **Sistema de Logs**
+
 - **Almacenamiento en BD:** Migración de archivos de texto a tabla de base de datos dedicada
 - **Acceso Web:** Los logs ahora son accesibles directamente desde el panel de administración
 - **Contexto Estructurado:** Información adicional almacenada como JSON para mejor análisis
@@ -155,22 +198,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### **Compatibilidad PHP**
+
 - **Propiedades Dinámicas:** Eliminadas las advertencias "Creation of dynamic property is deprecated" en PHP 8.1+
 - **Declaración Explícita:** Todas las propiedades de clase están ahora explícitamente declaradas
 - **Type Hints:** Implementación de tipos de datos para mejor compatibilidad futura
 
 #### **WordPress Integration**
+
 - **Settings API:** Corregido el error "a página de opções não foi encontrada" en el panel de administración
 - **Grupos de Opciones:** Definición consistente y correcta de grupos para WordPress Settings API
 - **Hooks Callback:** Verificación de existencia de funciones antes de registrar callbacks
 
 #### **Seguridad y Sanitización**
+
 - **XSS Prevention:** Escape completo de todas las salidas HTML
 - **SQL Injection:** Uso consistente de prepared statements
 - **CSRF Protection:** Nonces implementados en todas las operaciones sensibles
 - **Permission Checks:** Verificación de capacidades de usuario en cada endpoint
 
 #### **Performance Issues**
+
 - **Memory Leaks:** Limpieza adecuada de variables y objetos grandes
 - **Database Queries:** Optimización de consultas con índices apropiados
 - **Asset Loading:** Carga condicional de CSS/JS solo donde es necesario
@@ -178,12 +225,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 #### **Vulnerabilidades Identificadas y Corregidas**
+
 - **Input Sanitization:** Todos los inputs de usuario son sanitizados según su tipo de dato
 - **Output Escaping:** Implementación de `esc_html()`, `esc_attr()`, `esc_url()` en todas las salidas
 - **Nonce Verification:** Protección contra ataques CSRF en todas las operaciones AJAX
 - **Permission Validation:** Verificación de `current_user_can()` en todos los endpoints administrativos
 
 #### **Medidas de Seguridad Adicionales**
+
 - **File Access Control:** Verificación de `ABSPATH` en todos los archivos
 - **Error Logging:** Información sensible nunca expuesta en logs públicos
 - **API Key Protection:** Configuraciones sensibles almacenadas de forma segura
@@ -192,11 +241,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 #### **Código Legacy**
+
 - **Configuraciones Hardcodeadas:** Eliminadas las variables directas en el archivo principal
 - **Funciones Globales:** Migradas a métodos de clase para mejor encapsulación
 - **Archivos de Log Externos:** Dependencia de archivos `.log` reemplazada por base de datos
 
 #### **Dependencias Obsoletas**
+
 - **Funciones Deprecated:** Eliminación de funciones marcadas como obsoletas en versiones anteriores
 - **Hooks Obsoletos:** Actualización a hooks actuales de WordPress/WooCommerce/PMPro
 - **CSS/JS Legacy:** Eliminación de código de compatibilidad para navegadores obsoletos
@@ -204,12 +255,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical Debt
 
 #### **Mejoras de Código**
+
 - **Code Coverage:** Base establecida para futura implementación de tests unitarios
 - **Documentation:** PHPDoc completa en todas las clases y métodos públicos
 - **Coding Standards:** Adherencia completa a WordPress Coding Standards
 - **Error Handling:** Implementación consistente de try-catch y WP_Error
 
 #### **Preparación Futura**
+
 - **Extensibilidad:** Arquitectura preparada para agregar nuevos gateways
 - **Internacionalización:** Strings preparados para traducción con textdomain
 - **API Hooks:** Filtros y acciones disponibles para extensiones de terceros
@@ -220,6 +273,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Próximas Versiones]
 
 ### Planned for v1.1.0
+
 - **Stripe Integration:** Soporte completo para Stripe Payment Gateway
 - **Bulk Operations:** Herramientas masivas para gestión de membresías
 - **Reporting Dashboard:** Métricas avanzadas y reportes de sincronización
@@ -227,6 +281,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **API REST:** Endpoints públicos para integraciones externas
 
 ### Planned for v1.2.0
+
 - **Multi-Gateway Support:** Soporte simultáneo para múltiples gateways
 - **Advanced Mapping:** Configuración visual de relaciones nivel-producto
 - **Webhook Manager:** Interfaz para gestión de webhooks entrantes

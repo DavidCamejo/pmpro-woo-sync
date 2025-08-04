@@ -16,7 +16,7 @@ $settings = $this->settings->get_settings();
 $system_status = method_exists( $this, 'get_system_status' ) ? $this->get_system_status() : array(
     'sync_enabled' => false,
     'dependencies_ok' => false,
-    'debug_mode' => false
+    'debug_mode' => 0
 );
 ?>
 
@@ -44,8 +44,9 @@ $system_status = method_exists( $this, 'get_system_status' ) ? $this->get_system
     </div>
 
     <!-- SOLO UN FORMULARIO - CORRECCIÓN PRINCIPAL -->
-    <form method="post" action="options.php" class="pmpro-woo-sync-settings-form">
-        <?php settings_fields( 'pmpro_woo_sync_settings_group' ); ?>
+    <form method="post" action="" class="pmpro-woo-sync-settings-form">
+        <?php wp_nonce_field( 'pmpro_woo_sync_save_settings', '_pmpro_woo_sync_nonce' ); ?>
+        <input type="hidden" name="pmpro_woo_sync_action" value="save_settings" />
         
         <!-- Sección: Configuración General -->
         <div class="postbox">
@@ -65,6 +66,7 @@ $system_status = method_exists( $this, 'get_system_status' ) ? $this->get_system
                                         <span><?php esc_html_e( 'Habilitar Sincronización', 'pmpro-woo-sync' ); ?></span>
                                     </legend>
                                     <label for="enable_sync">
+                                        <input name="pmpro_woo_sync_settings[enable_sync]" type="hidden" value="0" />
                                         <input name="pmpro_woo_sync_settings[enable_sync]" type="checkbox" id="enable_sync" value="1" <?php checked( $settings['enable_sync'] ?? false ); ?> />
                                         <?php esc_html_e( 'Activar la sincronización automática entre PMPro y WooCommerce', 'pmpro-woo-sync' ); ?>
                                     </label>
@@ -107,6 +109,7 @@ $system_status = method_exists( $this, 'get_system_status' ) ? $this->get_system
                                         <span><?php esc_html_e( 'Registrar Pagos en PMPro', 'pmpro-woo-sync' ); ?></span>
                                     </legend>
                                     <label for="record_payments_in_pmpro">
+                                        <input name="pmpro_woo_sync_settings[record_payments_in_pmpro]" type="hidden" value="0" />
                                         <input name="pmpro_woo_sync_settings[record_payments_in_pmpro]" type="checkbox" id="record_payments_in_pmpro" value="1" <?php checked( $settings['record_payments_in_pmpro'] ?? true ); ?> />
                                         <?php esc_html_e( 'Registrar los pagos de WooCommerce en el historial de PMPro', 'pmpro-woo-sync' ); ?>
                                     </label>
@@ -139,8 +142,8 @@ $system_status = method_exists( $this, 'get_system_status' ) ? $this->get_system
                                         <span><?php esc_html_e( 'Habilitar Logs', 'pmpro-woo-sync' ); ?></span>
                                     </legend>
                                     <label for="enable_logging">
-                                        <!-- CORRECCIÓN: Valor por defecto consistente -->
-                                        <input name="pmpro_woo_sync_settings[enable_logging]" type="checkbox" id="enable_logging" value="1" <?php checked( $settings['enable_logging'] ?? false ); ?> />
+                                        <input name="pmpro_woo_sync_settings[enable_logging]" type="hidden" value="0" />
+                                        <input name="pmpro_woo_sync_settings[enable_logging]" type="checkbox" id="enable_logging" value="1" <?php checked( $settings['enable_logging'] ?? 1 ); ?> />
                                         <?php esc_html_e( 'Registrar actividades de sincronización en logs', 'pmpro-woo-sync' ); ?>
                                     </label>
                                 </fieldset>
@@ -207,9 +210,8 @@ $system_status = method_exists( $this, 'get_system_status' ) ? $this->get_system
                                         <span><?php esc_html_e( 'Modo Debug', 'pmpro-woo-sync' ); ?></span>
                                     </legend>
                                     <label for="debug_mode">
-                                        <!-- CORRECCIÓN CRÍTICA: Agregar hidden input para valor unchecked -->
                                         <input name="pmpro_woo_sync_settings[debug_mode]" type="hidden" value="0" />
-                                        <input name="pmpro_woo_sync_settings[debug_mode]" type="checkbox" id="debug_mode" value="1" <?php checked( $settings['debug_mode'] ?? false ); ?> />
+                                        <input name="pmpro_woo_sync_settings[debug_mode]" type="checkbox" id="debug_mode" value="1" <?php checked( $settings['debug_mode'] ?? 0 ); ?> />
                                         <?php esc_html_e( 'Habilitar logging detallado para troubleshooting', 'pmpro-woo-sync' ); ?>
                                     </label>
                                 </fieldset>
@@ -219,7 +221,47 @@ $system_status = method_exists( $this, 'get_system_status' ) ? $this->get_system
                             </td>
                         </tr>
                         
-                        <!-- Resto de campos... -->
+                        <tr>
+                            <th scope="row">
+                                <label for="sync_failed_orders"><?php esc_html_e( 'Sincronizar Pedidos Fallidos', 'pmpro-woo-sync' ); ?></label>
+                            </th>
+                            <td>
+                                <fieldset>
+                                    <legend class="screen-reader-text">
+                                        <span><?php esc_html_e( 'Sincronizar Pedidos Fallidos', 'pmpro-woo-sync' ); ?></span>
+                                    </legend>
+                                    <label for="sync_failed_orders">
+                                        <input name="pmpro_woo_sync_settings[sync_failed_orders]" type="hidden" value="0" />
+                                        <input name="pmpro_woo_sync_settings[sync_failed_orders]" type="checkbox" id="sync_failed_orders" value="1" <?php checked( $settings['sync_failed_orders'] ?? 0 ); ?> />
+                                        <?php esc_html_e( 'Cancelar membresías cuando los pedidos fallan', 'pmpro-woo-sync' ); ?>
+                                    </label>
+                                </fieldset>
+                                <p class="description">
+                                    <?php esc_html_e( 'Si está habilitado, las membresías se cancelarán cuando los pagos fallen.', 'pmpro-woo-sync' ); ?>
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">
+                                <label for="auto_link_products"><?php esc_html_e( 'Auto-vincular Productos', 'pmpro-woo-sync' ); ?></label>
+                            </th>
+                            <td>
+                                <fieldset>
+                                    <legend class="screen-reader-text">
+                                        <span><?php esc_html_e( 'Auto-vincular Productos', 'pmpro-woo-sync' ); ?></span>
+                                    </legend>
+                                    <label for="auto_link_products">
+                                        <input name="pmpro_woo_sync_settings[auto_link_products]" type="hidden" value="0" />
+                                        <input name="pmpro_woo_sync_settings[auto_link_products]" type="checkbox" id="auto_link_products" value="1" <?php checked( $settings['auto_link_products'] ?? 1 ); ?> />
+                                        <?php esc_html_e( 'Vincular automáticamente productos con niveles de membresía', 'pmpro-woo-sync' ); ?>
+                                    </label>
+                                </fieldset>
+                                <p class="description">
+                                    <?php esc_html_e( 'Busca automáticamente la vinculación entre productos WooCommerce y niveles PMPro.', 'pmpro-woo-sync' ); ?>
+                                </p>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>

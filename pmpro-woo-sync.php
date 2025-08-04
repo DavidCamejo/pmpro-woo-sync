@@ -162,10 +162,18 @@ spl_autoload_register( function ( $class_name ) {
         
         if ( file_exists( $file_path ) ) {
             require_once $file_path;
+            
+            // VERIFICAR que la clase se cargó correctamente
+            if ( ! class_exists( $class_name, false ) ) {
+                error_log( "PMPro-Woo-Sync: Clase {$class_name} no se pudo cargar desde {$file_path}" );
+            }
             return;
+        } else {
+            // LOG de archivo faltante
+            error_log( "PMPro-Woo-Sync: Archivo no encontrado: {$file_path}" );
         }
     }
-    
+
     // Fallback al método original si no está en el mapeo
     $file_name = 'class-' . str_replace( '_', '-', strtolower( $class_name ) ) . '.php';
     $directories = array(
@@ -185,7 +193,7 @@ spl_autoload_register( function ( $class_name ) {
     if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
         error_log( "PMPro-Woo-Sync: No se pudo cargar la clase {$class_name}" );
     }
-});
+}, true, true ); // AGREGAR prepend=true para prioridad
 
 /**
  * Inicializa el plugin principal.
@@ -197,12 +205,12 @@ function pmpro_woo_sync_init() {
     if ( ! pmpro_woo_sync_check_dependencies() ) {
         return false;
     }
-    
-    // Cargar clase principal si no existe
+
+    // CARGAR CLASE PRINCIPAL EXPLÍCITAMENTE antes de usarla
     if ( ! pmpro_woo_sync_load_main_class() ) {
         return false;
     }
-    
+
     // Inicializar plugin
     $plugin = new PMPro_Woo_Sync();
     $plugin->run();
@@ -268,7 +276,7 @@ register_deactivation_hook( __FILE__, 'deactivate_pmpro_woo_sync' );
 /**
  * Inicializar el plugin después de que todos los plugins estén cargados.
  */
-add_action( 'plugins_loaded', 'pmpro_woo_sync_init', 20 );
+add_action( 'plugins_loaded', 'pmpro_woo_sync_init', 10 );
 
 /**
  * Función de debug para troubleshooting (mencionada en documentación).

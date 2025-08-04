@@ -12,13 +12,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class PMPro_Woo_Sync_Admin {
+        
+    // AGREGAR singleton pattern para evitar múltiples instancias
+    private static $instance = null;
+    
+    public static function get_instance() {
+        if ( self::$instance === null ) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
 
     /**
      * Instancia de PMPro_Woo_Sync_Settings
      *
      * @var PMPro_Woo_Sync_Settings
      */
-    protected $settings;
+    protected $settings = array(
+        'enable_sync' => 1,
+        'debug_mode' => 0,
+        'enable_logging' => 1,
+        'log_level' => 'info',
+        'log_retention_days' => 7,
+    );
 
     /**
      * Instancia de PMPro_Woo_Sync_Logger
@@ -37,12 +53,16 @@ class PMPro_Woo_Sync_Admin {
     /**
      * Constructor
      */
-    public function __construct() {
+    private function __construct() {
         $this->settings = new PMPro_Woo_Sync_Settings();
         $this->logger = PMPro_Woo_Sync_Logger::get_instance();
         
         $this->init_hooks();
     }
+    
+    // Prevenir clonación
+    private function __clone() {}
+    private function __wakeup() {}
 
     /**
     * Obtener productos de WooCommerce
@@ -171,27 +191,25 @@ class PMPro_Woo_Sync_Admin {
     }
 
     /**
-    * AJAX: Verificar estado del modo debug
-    */
+     * AJAX handler para verificar estado del debug
+     */
     public function ajax_debug_status() {
-        check_ajax_referer( 'pmpro_woo_sync_admin_nonce', 'nonce' );
-
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( -1, 403 );
+        check_ajax_referer('pmpro_woo_sync_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Permisos insuficientes', 'pmpro-woo-sync'));
         }
-
+        
+        $settings = $this->settings->get_settings();
         $debug_info = array(
             'debug_enabled' => $this->settings->is_debug_enabled(),
             'logging_enabled' => $this->settings->is_logging_enabled(),
             'log_level' => $this->settings->get_log_level(),
-            'settings_raw' => $this->settings->get_settings(),
+            'settings_raw' => $settings
         );
-
-        // Probar escritura de log debug
-        $this->logger->debug( 'Prueba de log debug desde verificación de estado' );
-
-        wp_send_json_success( array(
-            'message' => __( 'Estado del modo debug verificado', 'pmpro-woo-sync' ),
+        
+        wp_send_json_success(array(
+            'message' => __('Estado del debug verificado correctamente', 'pmpro-woo-sync'),
             'debug_info' => $debug_info
         ));
     }
@@ -200,7 +218,7 @@ class PMPro_Woo_Sync_Admin {
      * Añadir páginas del menú de administración
      */
     public function add_admin_menu_pages() {
-        // Página principal (Configuraciones)
+        // Página principal - WordPress automáticamente crea la primera subpágina
         $this->admin_pages['main'] = add_menu_page(
             __( 'PMPro-Woo-Sync', 'pmpro-woo-sync' ),
             __( 'PMPro-Woo-Sync', 'pmpro-woo-sync' ),
@@ -211,70 +229,100 @@ class PMPro_Woo_Sync_Admin {
             60
         );
 
-        // Subpágina de Configuraciones
+        // CAMBIAR EL TÍTULO de la subpágina automática (NO crear una nueva)
         $this->admin_pages['settings'] = add_submenu_page(
             'pmpro-woo-sync',
             __( 'Configuraciones', 'pmpro-woo-sync' ),
             __( 'Configuraciones', 'pmpro-woo-sync' ),
             'manage_options',
-            'pmpro-woo-sync',
+            'pmpro-woo-sync', // MISMO slug - esto reemplaza el título, no duplica
             array( $this, 'display_settings_page' )
         );
 
-        // Subpágina de Logs
+        // Resto de subpáginas con slugs únicos
         $this->admin_pages['logs'] = add_submenu_page(
             'pmpro-woo-sync',
             __( 'Logs del Sistema', 'pmpro-woo-sync' ),
             __( 'Logs', 'pmpro-woo-sync' ),
             'manage_options',
-            'pmpro-woo-sync-logs',
+            'pmpro-woo-sync-logs', // Slug diferente
             array( $this, 'display_logs_page' )
         );
 
-        // Subpágina de Herramientas
         $this->admin_pages['tools'] = add_submenu_page(
             'pmpro-woo-sync',
             __( 'Herramientas de Sincronización', 'pmpro-woo-sync' ),
             __( 'Herramientas', 'pmpro-woo-sync' ),
             'manage_options',
-            'pmpro-woo-sync-tools',
+            'pmpro-woo-sync-tools', // Slug diferente
             array( $this, 'display_tools_page' )
         );
 
-        // Subpágina de Estado del Sistema
         $this->admin_pages['status'] = add_submenu_page(
             'pmpro-woo-sync',
             __( 'Estado del Sistema', 'pmpro-woo-sync' ),
             __( 'Estado', 'pmpro-woo-sync' ),
             'manage_options',
-            'pmpro-woo-sync-status',
+            'pmpro-woo-sync-status', // Slug diferente
             array( $this, 'display_status_page' )
         );
 
-        // Hooks específicos para cada página
-        foreach ( $this->admin_pages as $page_key => $hook_suffix ) {
-            add_action( "load-{$hook_suffix}", array( $this, "load_{$page_key}_page" ) );
-        }
-    }
-
-    /**
-     * Callback ejecutado al cargar la página principal
-     */
-    public function load_main_page() {
-        $this->load_settings_page();
+        // Hooks para páginas - main y settings usan el mismo hook
+        add_action( "load-{$this->admin_pages['main']}", array( $this, 'load_settings_page' ) );
+        add_action( "load-{$this->admin_pages['logs']}", array( $this, 'load_logs_page' ) );
+        add_action( "load-{$this->admin_pages['tools']}", array( $this, 'load_tools_page' ) );
+        add_action( "load-{$this->admin_pages['status']}", array( $this, 'load_status_page' ) );
     }
 
     /**
      * Callback ejecutado al cargar la página de configuraciones
      */
     public function load_settings_page() {
-        // Procesar acciones de configuración
-        if ( isset( $_POST['pmpro_woo_sync_action'] ) ) {
-            $this->handle_settings_actions();
+        // Procesar guardado de configuraciones
+        if ( isset( $_POST['pmpro_woo_sync_action'] ) && $_POST['pmpro_woo_sync_action'] === 'save_settings' ) {
+            $this->handle_save_settings();
         }
 
         // Agregar help tabs
         $this->add_settings_help_tabs();
+    }
+
+    /**
+     * Manejar guardado de configuraciones
+     */
+    private function handle_save_settings() {
+        // Verificar nonce
+        if ( ! isset( $_POST['_pmpro_woo_sync_nonce'] ) || ! wp_verify_nonce( $_POST['_pmpro_woo_sync_nonce'], 'pmpro_woo_sync_save_settings' ) ) {
+            wp_die( __( 'Acción no autorizada.', 'pmpro-woo-sync' ) );
+        }
+
+        // Verificar permisos
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( __( 'No tienes permisos suficientes.', 'pmpro-woo-sync' ) );
+        }
+
+        // Obtener datos del formulario
+        $input = isset( $_POST['pmpro_woo_sync_settings'] ) ? $_POST['pmpro_woo_sync_settings'] : array();
+        
+        // Sanitizar usando el método existente de la clase Settings
+        $sanitized_settings = $this->settings->sanitize_settings( $input );
+        
+        // Guardar configuraciones
+        $saved = update_option( 'pmpro_woo_sync_settings', $sanitized_settings );
+        
+        if ( $saved ) {
+            add_action( 'admin_notices', function() {
+                echo '<div class="notice notice-success is-dismissible"><p>' . __( 'Configuraciones guardadas exitosamente.', 'pmpro-woo-sync' ) . '</p></div>';
+            });
+        } else {
+            add_action( 'admin_notices', function() {
+                echo '<div class="notice notice-error is-dismissible"><p>' . __( 'Error al guardar las configuraciones.', 'pmpro-woo-sync' ) . '</p></div>';
+            });
+        }
+        
+        // Redireccionar para evitar reenvío del formulario
+        wp_redirect( admin_url( 'admin.php?page=pmpro-woo-sync' ) );
+        exit;
     }
 
     /**
@@ -319,39 +367,8 @@ class PMPro_Woo_Sync_Admin {
             wp_die( __( 'No tienes permisos suficientes para acceder a esta página.', 'pmpro-woo-sync' ) );
         }
 
-        // Mostrar mensajes de error/confirmación
-        settings_errors( 'pmpro_woo_sync_messages' );
-
-        $settings = $this->settings->get_settings();
-        $system_status = $this->get_system_status();
-
-        ?>
-        <div class="wrap">
-            <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
-            
-            <?php $this->render_status_indicators(); ?>
-            
-            <form method="post" action="options.php">
-                <?php
-                settings_fields( 'pmpro_woo_sync_settings_group' );
-                do_settings_sections( 'pmpro-woo-sync' );
-                submit_button( __( 'Guardar Configuraciones', 'pmpro-woo-sync' ) );
-                ?>
-            </form>
-
-            <div class="pmpro-woo-sync-quick-actions">
-                <h3><?php _e( 'Acciones Rápidas', 'pmpro-woo-sync' ); ?></h3>
-                <p>
-                    <button type="button" class="button" id="test-sync-connection">
-                        <?php _e( 'Probar Sincronización', 'pmpro-woo-sync' ); ?>
-                    </button>
-                    <button type="button" class="button" id="view-logs">
-                        <?php _e( 'Ver Logs', 'pmpro-woo-sync' ); ?>
-                    </button>
-                </p>
-            </div>
-        </div>
-        <?php
+        // USAR SOLO EL TEMPLATE PERSONALIZADO - ELIMINAR WordPress Settings API
+        include_once plugin_dir_path( __FILE__ ) . 'partials/admin-display-settings.php';
     }
 
     /**
@@ -362,144 +379,8 @@ class PMPro_Woo_Sync_Admin {
             wp_die( __( 'No tienes permisos suficientes para acceder a esta página.', 'pmpro-woo-sync' ) );
         }
 
-        // Parámetros de paginación y filtros
-        $logs_per_page = 20;
-        $current_page = isset( $_GET['paged'] ) ? max( 1, intval( $_GET['paged'] ) ) : 1;
-        $offset = ( $current_page - 1 ) * $logs_per_page;
-        $filter_level = isset( $_GET['log_level_filter'] ) ? sanitize_text_field( $_GET['log_level_filter'] ) : '';
-        $search_query = isset( $_GET['search'] ) ? sanitize_text_field( $_GET['search'] ) : '';
-        $date_from = isset( $_GET['date_from'] ) ? sanitize_text_field( $_GET['date_from'] ) : '';
-        $date_to = isset( $_GET['date_to'] ) ? sanitize_text_field( $_GET['date_to'] ) : '';
-
-        // Obtener logs
-        $logs = $this->logger->get_logs( $logs_per_page, $offset, $filter_level, $search_query, $date_from, $date_to );
-        $total_logs = $this->logger->get_total_logs( $filter_level, $search_query, $date_from, $date_to );
-        $total_pages = ceil( $total_logs / $logs_per_page );
-
-        // Estadísticas de logs
-        $log_stats = $this->logger->get_log_stats();
-
-        ?>
-        <div class="wrap">
-            <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
-
-            <!-- Estadísticas de logs -->
-            <div class="pmpro-woo-sync-log-stats">
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-number"><?php echo esc_html( $log_stats['total'] ); ?></span>
-                        <span class="stat-label"><?php _e( 'Total de Logs', 'pmpro-woo-sync' ); ?></span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number"><?php echo esc_html( $log_stats['last_24h'] ); ?></span>
-                        <span class="stat-label"><?php _e( 'Últimas 24h', 'pmpro-woo-sync' ); ?></span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number"><?php echo esc_html( $log_stats['last_7d'] ); ?></span>
-                        <span class="stat-label"><?php _e( 'Últimos 7 días', 'pmpro-woo-sync' ); ?></span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number"><?php echo esc_html( $log_stats['database_size'] ); ?></span>
-                        <span class="stat-label"><?php _e( 'Tamaño BD', 'pmpro-woo-sync' ); ?></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filtros -->
-            <div class="pmpro-woo-sync-log-filters">
-                <form method="get" action="">
-                    <input type="hidden" name="page" value="pmpro-woo-sync-logs" />
-                    
-                    <select name="log_level_filter">
-                        <option value=""><?php _e( 'Todos los niveles', 'pmpro-woo-sync' ); ?></option>
-                        <option value="info" <?php selected( $filter_level, 'info' ); ?>><?php _e( 'Info', 'pmpro-woo-sync' ); ?></option>
-                        <option value="success" <?php selected( $filter_level, 'success' ); ?>><?php _e( 'Éxito', 'pmpro-woo-sync' ); ?></option>
-                        <option value="warning" <?php selected( $filter_level, 'warning' ); ?>><?php _e( 'Advertencia', 'pmpro-woo-sync' ); ?></option>
-                        <option value="error" <?php selected( $filter_level, 'error' ); ?>><?php _e( 'Error', 'pmpro-woo-sync' ); ?></option>
-                        <option value="debug" <?php selected( $filter_level, 'debug' ); ?>><?php _e( 'Debug', 'pmpro-woo-sync' ); ?></option>
-                    </select>
-                    
-                    <input type="text" name="search" value="<?php echo esc_attr( $search_query ); ?>" placeholder="<?php _e( 'Buscar en mensajes...', 'pmpro-woo-sync' ); ?>" />
-                    
-                    <input type="date" name="date_from" value="<?php echo esc_attr( $date_from ); ?>" />
-                    <input type="date" name="date_to" value="<?php echo esc_attr( $date_to ); ?>" />
-                    
-                    <button type="submit" class="button"><?php _e( 'Filtrar', 'pmpro-woo-sync' ); ?></button>
-                    <a href="<?php echo admin_url( 'admin.php?page=pmpro-woo-sync-logs' ); ?>" class="button"><?php _e( 'Limpiar', 'pmpro-woo-sync' ); ?></a>
-                </form>
-            </div>
-
-            <!-- Acciones de logs -->
-            <div class="pmpro-woo-sync-log-actions">
-                <button type="button" class="button" id="refresh-logs"><?php _e( 'Actualizar', 'pmpro-woo-sync' ); ?></button>
-                <button type="button" class="button" id="export-logs"><?php _e( 'Exportar', 'pmpro-woo-sync' ); ?></button>
-                <button type="button" class="button button-secondary" id="clear-logs"><?php _e( 'Limpiar Todos', 'pmpro-woo-sync' ); ?></button>
-            </div>
-
-            <!-- Tabla de logs -->
-            <div class="pmpro-woo-sync-logs-table">
-                <table class="wp-list-table widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th><?php _e( 'Fecha/Hora', 'pmpro-woo-sync' ); ?></th>
-                            <th><?php _e( 'Nivel', 'pmpro-woo-sync' ); ?></th>
-                            <th><?php _e( 'Mensaje', 'pmpro-woo-sync' ); ?></th>
-                            <th><?php _e( 'Usuario', 'pmpro-woo-sync' ); ?></th>
-                            <th><?php _e( 'Contexto', 'pmpro-woo-sync' ); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody id="logs-table-body">
-                        <?php foreach ( $logs as $log_entry ) : ?>
-                            <tr class="log-level-<?php echo esc_attr( $log_entry->level ); ?>">
-                                <td><?php echo esc_html( $log_entry->timestamp ); ?></td>
-                                <td>
-                                    <span class="log-level-badge log-level-<?php echo esc_attr( $log_entry->level ); ?>">
-                                        <?php echo esc_html( ucfirst( $log_entry->level ) ); ?>
-                                    </span>
-                                </td>
-                                <td><?php echo esc_html( $log_entry->message ); ?></td>
-                                <td>
-                                    <?php if ( $log_entry->user_id ) : ?>
-                                        <?php $user = get_user_by( 'id', $log_entry->user_id ); ?>
-                                        <?php echo $user ? esc_html( $user->display_name ) : esc_html( $log_entry->user_id ); ?>
-                                    <?php else : ?>
-                                        —
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <?php if ( ! empty( $log_entry->context ) ) : ?>
-                                        <button type="button" class="button-link view-context" data-context="<?php echo esc_attr( $log_entry->context ); ?>">
-                                            <?php _e( 'Ver detalles', 'pmpro-woo-sync' ); ?>
-                                        </button>
-                                    <?php else : ?>
-                                        —
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-
-                <!-- Paginación -->
-                <?php if ( $total_pages > 1 ) : ?>
-                    <div class="tablenav">
-                        <div class="tablenav-pages">
-                            <?php
-                            echo paginate_links( array(
-                                'base' => add_query_arg( 'paged', '%#%' ),
-                                'format' => '',
-                                'prev_text' => __( '&laquo;', 'pmpro-woo-sync' ),
-                                'next_text' => __( '&raquo;', 'pmpro-woo-sync' ),
-                                'total' => $total_pages,
-                                'current' => $current_page,
-                            ));
-                            ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php
+        // USAR SOLO EL TEMPLATE - ELIMINAR TODO EL HTML DIRECTO
+        include_once plugin_dir_path( __FILE__ ) . 'partials/admin-display-logs.php';
     }
 
     /**
@@ -510,82 +391,8 @@ class PMPro_Woo_Sync_Admin {
             wp_die( __( 'No tienes permisos suficientes para acceder a esta página.', 'pmpro-woo-sync' ) );
         }
 
-        ?>
-        <div class="wrap">
-            <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
-
-            <div class="pmpro-woo-sync-tools-grid">
-                <!-- Herramientas de Sincronización -->
-                <div class="tool-section">
-                    <h3 style="padding-left:20px;"><?php _e( 'Herramientas de Sincronización', 'pmpro-woo-sync' ); ?></h3>
-                    
-                    <div class="tool-item">
-                        <h4><?php _e( 'Sincronización Manual', 'pmpro-woo-sync' ); ?></h4>
-                        <p><?php _e( 'Sincronizar manualmente un usuario específico.', 'pmpro-woo-sync' ); ?></p>
-                        <form method="post" action="">
-                            <?php wp_nonce_field( 'pmpro_woo_sync_tools_action', '_wpnonce' ); ?>
-                            <input type="hidden" name="pmpro_woo_sync_tools_action" value="sync_user" />
-                            <input type="number" name="user_id" placeholder="<?php _e( 'ID del usuario', 'pmpro-woo-sync' ); ?>" required />
-                            <button type="submit" class="button button-primary"><?php _e( 'Sincronizar Usuario', 'pmpro-woo-sync' ); ?></button>
-                        </form>
-                    </div>
-
-                    <div class="tool-item">
-                        <h4><?php _e( 'Sincronización Masiva', 'pmpro-woo-sync' ); ?></h4>
-                        <p><?php _e( 'Sincronizar todas las membresías con sus suscripciones correspondientes.', 'pmpro-woo-sync' ); ?></p>
-                        <form method="post" action="">
-                            <?php wp_nonce_field( 'pmpro_woo_sync_tools_action', '_wpnonce' ); ?>
-                            <input type="hidden" name="pmpro_woo_sync_tools_action" value="sync_all_memberships" />
-                            <button type="submit" class="button button-primary" onclick="return confirm('<?php _e( '¿Está seguro? Esta operación puede tomar varios minutos.', 'pmpro-woo-sync' ); ?>')">
-                                <?php _e( 'Sincronizar Todo', 'pmpro-woo-sync' ); ?>
-                            </button>
-                        </form>
-                    </div>
-
-                    <div class="tool-item">
-                        <h4><?php _e( 'Reparar Enlaces', 'pmpro-woo-sync' ); ?></h4>
-                        <p><?php _e( 'Reparar enlaces rotos entre suscripciones y membresías.', 'pmpro-woo-sync' ); ?></p>
-                        <form method="post" action="">
-                            <?php wp_nonce_field( 'pmpro_woo_sync_tools_action', '_wpnonce' ); ?>
-                            <input type="hidden" name="pmpro_woo_sync_tools_action" value="repair_subscription_links" />
-                            <button type="submit" class="button button-secondary">
-                                <?php _e( 'Reparar Enlaces', 'pmpro-woo-sync' ); ?>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Herramientas de Mantenimiento -->
-                <div class="tool-section">
-                    <h3 style="padding-left:20px;"><?php _e( 'Herramientas de Mantenimiento', 'pmpro-woo-sync' ); ?></h3>
-                    
-                    <div class="tool-item">
-                        <h4><?php _e( 'Limpiar Logs Antiguos', 'pmpro-woo-sync' ); ?></h4>
-                        <p><?php _e( 'Eliminar logs más antiguos que el período de retención configurado.', 'pmpro-woo-sync' ); ?></p>
-                        <form method="post" action="">
-                            <?php wp_nonce_field( 'pmpro_woo_sync_tools_action', '_wpnonce' ); ?>
-                            <input type="hidden" name="pmpro_woo_sync_tools_action" value="cleanup_old_logs" />
-                            <button type="submit" class="button button-secondary">
-                                <?php _e( 'Limpiar Logs', 'pmpro-woo-sync' ); ?>
-                            </button>
-                        </form>
-                    </div>
-
-                    <div class="tool-item">
-                        <h4><?php _e( 'Reiniciar Configuraciones', 'pmpro-woo-sync' ); ?></h4>
-                        <p><?php _e( 'Restaurar todas las configuraciones a sus valores por defecto.', 'pmpro-woo-sync' ); ?></p>
-                        <form method="post" action="">
-                            <?php wp_nonce_field( 'pmpro_woo_sync_tools_action', '_wpnonce' ); ?>
-                            <input type="hidden" name="pmpro_woo_sync_tools_action" value="reset_settings" />
-                            <button type="submit" class="button button-secondary" onclick="return confirm('<?php _e( '¿Está seguro? Se perderán todas las configuraciones personalizadas.', 'pmpro-woo-sync' ); ?>')">
-                                <?php _e( 'Reiniciar Configuraciones', 'pmpro-woo-sync' ); ?>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <?php
+        // USAR SOLO EL TEMPLATE - ELIMINAR TODO EL HTML DIRECTO
+        include_once plugin_dir_path( __FILE__ ) . 'partials/admin-display-tools.php';
     }
 
     /**

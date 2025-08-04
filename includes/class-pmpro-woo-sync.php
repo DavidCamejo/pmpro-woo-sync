@@ -76,14 +76,38 @@ class PMPro_Woo_Sync {
             return;
         }
 
+    // FORZAR CARGA DE CLASES NECESARIAS
+    $this->load_required_classes();
+
         // Inicializar configuraciones
         if ( class_exists( 'PMPro_Woo_Sync_Settings' ) ) {
             new PMPro_Woo_Sync_Settings();
         }
 
-        // Inicializar admin si estamos en el backend
+        // Inicializar admin solo si la clase existe y estamos en admin
         if ( is_admin() && class_exists( 'PMPro_Woo_Sync_Admin' ) ) {
-            new PMPro_Woo_Sync_Admin();
+            PMPro_Woo_Sync_Admin::get_instance();
+        }
+    }
+
+    /**
+     * NUEVA FUNCIÓN: Cargar clases requeridas explícitamente
+     */
+    private function load_required_classes() {
+        $required_classes = array(
+            'PMPro_Woo_Sync_Logger' => PMPRO_WOO_SYNC_PATH . 'includes/class-pmpro-woo-sync-logger.php',
+            'PMPro_Woo_Sync_Settings' => PMPRO_WOO_SYNC_PATH . 'includes/class-pmpro-woo-sync-settings.php',
+        );
+        
+        // En admin, también cargar la clase admin
+        if ( is_admin() ) {
+            $required_classes['PMPro_Woo_Sync_Admin'] = PMPRO_WOO_SYNC_PATH . 'admin/class-pmpro-woo-sync-admin.php';
+        }
+        
+        foreach ( $required_classes as $class_name => $file_path ) {
+            if ( ! class_exists( $class_name ) && file_exists( $file_path ) ) {
+                require_once $file_path;
+            }
         }
     }
 

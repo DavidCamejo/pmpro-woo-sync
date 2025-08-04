@@ -42,215 +42,28 @@ class PMPro_Woo_Sync_Settings {
     * Constructor
     */
     public function __construct() {
-        add_action( 'admin_init', array( $this, 'register_settings' ) );
+        add_action( 'admin_init', array( $this, 'maybe_update_logs_table' ) ); // AGREGADO
     }
 
     /**
-    * Registrar configuraciones
+    * Verificar y actualizar estructura de tabla de logs
     */
-    public function register_settings() {
-        register_setting(
-            'pmpro_woo_sync_settings_group',
-            $this->option_name,
-            array( $this, 'sanitize_settings' )
-        );
-
-        // Sección principal
-        add_settings_section(
-            'pmpro_woo_sync_main_section',
-            __( 'Configuración General', 'pmpro-woo-sync' ),
-            array( $this, 'main_section_callback' ),
-            'pmpro-woo-sync'
-        );
-
-        // Campo: Habilitar sincronización
-        add_settings_field(
-            'enable_sync',
-            __( 'Habilitar Sincronización', 'pmpro-woo-sync' ),
-            array( $this, 'render_enable_sync_field' ),
-            'pmpro-woo-sync',
-            'pmpro_woo_sync_main_section'
-        );
-
-        // Campo: Modo debug
-        add_settings_field(
-            'debug_mode',
-            __( 'Modo Debug', 'pmpro-woo-sync' ),
-            array( $this, 'render_debug_mode_field' ),
-            'pmpro-woo-sync',
-            'pmpro_woo_sync_main_section'
-        );
-
-        // Campo: Retención de logs
-        add_settings_field(
-            'log_retention_days',
-            __( 'Retención de Logs (días)', 'pmpro-woo-sync' ),
-            array( $this, 'render_log_retention_field' ),
-            'pmpro-woo-sync',
-            'pmpro_woo_sync_main_section'
-        );
-
-        // Sección de sincronización avanzada
-        add_settings_section(
-            'pmpro_woo_sync_advanced_section',
-            __( 'Configuración Avanzada', 'pmpro-woo-sync' ),
-            array( $this, 'advanced_section_callback' ),
-            'pmpro-woo-sync'
-        );
-
-        // Campo: Sincronizar pedidos fallidos
-        add_settings_field(
-            'sync_failed_orders',
-            __( 'Sincronizar Pedidos Fallidos', 'pmpro-woo-sync' ),
-            array( $this, 'render_sync_failed_field' ),
-            'pmpro-woo-sync',
-            'pmpro_woo_sync_advanced_section'
-        );
-
-        // Campo: Auto-vincular productos
-        add_settings_field(
-            'auto_link_products',
-            __( 'Auto-vincular Productos', 'pmpro-woo-sync' ),
-            array( $this, 'render_auto_link_field' ),
-            'pmpro-woo-sync',
-            'pmpro_woo_sync_advanced_section'
-        );
-
-        // Campo: Registrar pagos en PMPro
-        add_settings_field(
-            'record_payments_in_pmpro',
-            __( 'Registrar Pagos en PMPro', 'pmpro-woo-sync' ),
-            array( $this, 'render_record_payments_field' ),
-            'pmpro-woo-sync',
-            'pmpro_woo_sync_advanced_section'
-        );
-    }
-
-    /**
-    * Callback de la sección principal
-    */
-    public function main_section_callback() {
-        echo '<p>' . __( 'Configuraciones principales para la sincronización entre WooCommerce y Paid Memberships Pro.', 'pmpro-woo-sync' ) . '</p>';
-    }
-
-    /**
-    * Callback de la sección avanzada
-    */
-    public function advanced_section_callback() {
-        echo '<p>' . __( 'Configuraciones avanzadas para usuarios experimentados.', 'pmpro-woo-sync' ) . '</p>';
-    }
-
-    /**
-    * Renderizar campo de habilitar sincronización
-    */
-    public function render_enable_sync_field() {
-        $options = $this->get_settings();
-        ?>
-        <label>
-            <input type="checkbox" 
-                   name="<?php echo esc_attr( $this->option_name ); ?>[enable_sync]" 
-                   value="1" 
-                   <?php checked( 1, $options['enable_sync'] ); ?> />
-            <?php _e( 'Sincronizar automáticamente membresías con pagos recurrentes en WooCommerce (PagBank Connect)', 'pmpro-woo-sync' ); ?>
-        </label>
-        <p class="description">
-            <?php _e( 'Cuando está habilitado, los pagos recurrentes en PagBank Connect se reflejarán automáticamente en las membresías de PMPro.', 'pmpro-woo-sync' ); ?>
-        </p>
-        <?php
-    }
-
-    /**
-    * Renderizar campo de modo debug
-    */
-    public function render_debug_mode_field() {
-        $options = $this->get_settings();
-        ?>
-        <label>
-            <input type="checkbox" 
-                   name="<?php echo esc_attr( $this->option_name ); ?>[debug_mode]" 
-                   value="1" 
-                   <?php checked( 1, $options['debug_mode'] ); ?> />
-            <?php _e( 'Habilitar logging detallado para troubleshooting', 'pmpro-woo-sync' ); ?>
-        </label>
-        <p class="description">
-            <?php _e( 'Solo habilitar temporalmente para diagnosticar problemas. Puede generar muchos logs.', 'pmpro-woo-sync' ); ?>
-        </p>
-        <?php
-    }
-
-    /**
-    * Renderizar campo de retención de logs
-    */
-    public function render_log_retention_field() {
-        $options = $this->get_settings();
-        ?>
-        <input type="number" 
-               name="<?php echo esc_attr( $this->option_name ); ?>[log_retention_days]" 
-               value="<?php echo esc_attr( $options['log_retention_days'] ); ?>" 
-               min="1" 
-               max="365" 
-               class="small-text" />
-        <p class="description">
-            <?php _e( 'Número de días que se conservarán los logs antes de ser eliminados automáticamente.', 'pmpro-woo-sync' ); ?>
-        </p>
-        <?php
-    }
-
-    /**
-    * Renderizar campo de auto-vincular productos
-    */
-    public function render_auto_link_field() {
-        $options = $this->get_settings();
-        ?>
-        <label>
-            <input type="checkbox" 
-                   name="<?php echo esc_attr( $this->option_name ); ?>[auto_link_products]" 
-                   value="1" 
-                   <?php checked( 1, $options['auto_link_products'] ); ?> />
-            <?php _e( 'Vincular automáticamente productos con niveles de membresía', 'pmpro-woo-sync' ); ?>
-        </label>
-        <p class="description">
-            <?php _e( 'Busca automáticamente la vinculación entre productos WooCommerce y niveles PMPro.', 'pmpro-woo-sync' ); ?>
-        </p>
-        <?php
-    }
-
-    /**
-    * Renderizar campo de registrar pagos en PMPro
-    */
-    public function render_record_payments_field() {
-        $options = $this->get_settings();
-        ?>
-        <label>
-            <input type="checkbox" 
-                   name="<?php echo esc_attr( $this->option_name ); ?>[record_payments_in_pmpro]" 
-                   value="1" 
-                   <?php checked( 1, $options['record_payments_in_pmpro'] ); ?> />
-            <?php _e( 'Registrar pagos de renovación en el historial de PMPro', 'pmpro-woo-sync' ); ?>
-        </label>
-        <p class="description">
-            <?php _e( 'Crea registros de pago en PMPro cuando se procesan renovaciones exitosas.', 'pmpro-woo-sync' ); ?>
-        </p>
-        <?php
-    }
-
-    /**
-    * Renderizar campo de sincronizar pedidos fallidos
-    */
-    public function render_sync_failed_field() {
-        $options = $this->get_settings();
-        ?>
-        <label>
-            <input type="checkbox" 
-                   name="<?php echo esc_attr( $this->option_name ); ?>[sync_failed_orders]" 
-                   value="1" 
-                   <?php checked( 1, $options['sync_failed_orders'] ); ?> />
-            <?php _e( 'Cancelar membresías cuando los pedidos fallan', 'pmpro-woo-sync' ); ?>
-        </label>
-        <p class="description">
-            <?php _e( 'Si está habilitado, las membresías se cancelarán cuando los pagos fallen.', 'pmpro-woo-sync' ); ?>
-        </p>
-        <?php
+    public function maybe_update_logs_table() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'pmpro_woo_sync_logs';
+        
+        // Verificar si la columna user_id existe
+        $column_exists = $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = 'user_id'",
+            DB_NAME, $table_name
+        ));
+        
+        if ( ! $column_exists ) {
+            $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN user_id bigint(20) DEFAULT NULL AFTER id" );
+            error_log('PMPro Woo Sync: Agregada columna user_id a tabla de logs');
+        }
     }
 
     /**
@@ -260,6 +73,11 @@ class PMPro_Woo_Sync_Settings {
     * @return array
     */
     public function sanitize_settings( $input ) {
+        // DEBUGGING SIMPLIFICADO - opcional mantener temporalmente
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log('SANITIZE: Input=' . print_r($input, true));
+        }
+
         $output = array();
 
         // Sanitizar campos booleanos
@@ -327,7 +145,7 @@ class PMPro_Woo_Sync_Settings {
         // Log del cambio de configuraciones
         if ( class_exists( 'PMPro_Woo_Sync_Logger' ) ) {
             $logger = PMPro_Woo_Sync_Logger::get_instance();
-            
+          
             // Verificar si debug mode cambió
             $old_settings = $this->get_settings();
             if ( $old_settings['debug_mode'] !== $output['debug_mode'] ) {
@@ -338,17 +156,28 @@ class PMPro_Woo_Sync_Settings {
             }
         }
 
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log('SANITIZE: Output=' . print_r($output, true));
+        }
+
         return $output;
     }
 
     /**
-    * Obtener configuraciones con valores por defecto
-    *
-    * @return array
-    */
+     * Obtener configuraciones con valores por defecto
+     *
+     * @return array
+     */
     public function get_settings() {
-        $settings = get_option( $this->option_name, array() );
-        return wp_parse_args( $settings, $this->default_settings );
+        $settings = get_option( 'pmpro_woo_sync_settings', array() );
+        $merged_settings = wp_parse_args( $settings, $this->default_settings );
+        
+        // DEBUG: Log para verificar valores
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( 'PMPro-Woo-Sync Settings: ' . print_r( $merged_settings, true ) );
+        }
+        
+        return $merged_settings;
     }
 
     /**
@@ -378,7 +207,7 @@ class PMPro_Woo_Sync_Settings {
     * @return bool
     */
     public function is_debug_enabled() {
-        return (bool) $this->get_setting( 'debug_mode', false );
+        return (bool) $this->get_setting( 'debug_mode', 0 );
     }
 
     /**
@@ -420,7 +249,7 @@ class PMPro_Woo_Sync_Settings {
         }
 
         $current_level = $this->get_log_level();
-        
+      
         // Si debug está activado, loggear todo
         if ( $this->is_debug_enabled() ) {
             return true;
