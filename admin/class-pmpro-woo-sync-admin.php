@@ -28,13 +28,7 @@ class PMPro_Woo_Sync_Admin {
      *
      * @var PMPro_Woo_Sync_Settings
      */
-    protected $settings = array(
-        'enable_sync' => 1,
-        'debug_mode' => 0,
-        'enable_logging' => 1,
-        'log_level' => 'info',
-        'log_retention_days' => 7,
-    );
+    protected $settings;
 
     /**
      * Instancia de PMPro_Woo_Sync_Logger
