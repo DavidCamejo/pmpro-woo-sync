@@ -90,8 +90,13 @@ class PMPro_Woo_Sync_Settings {
             'record_payments_in_pmpro'
         );
 
+        // FIX: Corregido el procesamiento de checkboxes
+        // Los checkboxes no se envían cuando están desmarcados, pero 
+        // tenemos hidden fields con valor 0 antes de cada checkbox
         foreach ( $boolean_fields as $field ) {
-            $output[ $field ] = isset( $input[ $field ] ) ? 1 : 0;
+            // Si el campo existe y tiene valor 1, entonces está marcado
+            // Si no existe o tiene otro valor, no está marcado
+            $output[ $field ] = (isset( $input[ $field ] ) && $input[ $field ] == 1) ? 1 : 0;
         }
 
         // Sanitizar campos de texto
